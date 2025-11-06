@@ -1,0 +1,4 @@
+Version 0.0.0
+- Projet créé
+- Structure initiale avec main.py et launcher.py
+- Fichiers version.txt et changelog.txt ajoutés
