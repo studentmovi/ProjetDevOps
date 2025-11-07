@@ -2,3 +2,8 @@ Version 0.0.0
 - Projet créé
 - Structure initiale avec main.py et launcher.py
 - Fichiers version.txt et changelog.txt ajoutés
+
+Version 0.1.0
+- Ajout des page pour voir les evenements et eleves
+- mis en place du filtre au niveaux des eleves
+- Structure du projet revues
