@@ -1,0 +1,166 @@
+import tkinter as tk
+from tkinter import ttk
+
+class StyledButton:    
+    def __init__(self, parent, text, command=None, button_type='primary', icon="", **kwargs):
+        self.parent = parent
+        self.text = text
+        self.command = command
+        self.button_type = button_type
+        self.icon = icon
+        self.kwargs = kwargs
+        
+        # Styles prédéfinis
+        self.styles = {
+            'primary': {
+                'bg': '#3742fa',
+                'fg': 'white',
+                'activebackground': '#2c3e50',
+                'font': ('Helvetica', 9, 'bold'),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            },
+            'success': {
+                'bg': '#2ed573',
+                'fg': 'white',
+                'activebackground': '#27ae60',
+                'font': ('Helvetica', 9, 'bold'),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            },
+            'danger': {
+                'bg': '#ff4757',
+                'fg': 'white',
+                'activebackground': '#c0392b',
+                'font': ('Helvetica', 9, 'bold'),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            },
+            'warning': {
+                'bg': '#ffa502',
+                'fg': 'white',
+                'activebackground': '#e67e22',
+                'font': ('Helvetica', 9, 'bold'),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            },
+            'info': {
+                'bg': '#1e90ff',
+                'fg': 'white',
+                'activebackground': '#3498db',
+                'font': ('Helvetica', 9, 'bold'),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            },
+            'light': {
+                'bg': '#f1f2f6',
+                'fg': '#2c3e50',
+                'activebackground': '#ddd',
+                'font': ('Helvetica', 9),
+                'relief': 'flat',
+                'padx': 12,
+                'pady': 6,
+                'cursor': 'hand2'
+            }
+        }
+    
+    def create(self):
+        # Combiner l'icône et le texte
+        display_text = f"{self.icon} {self.text}".strip()
+        
+        # Récupérer le style
+        style_config = self.styles.get(self.button_type, self.styles['primary'])
+        
+        # Fusionner avec les kwargs personnalisés
+        final_config = {**style_config, **self.kwargs}
+        
+        # Créer le bouton
+        button = tk.Button(
+            self.parent,
+            text=display_text,
+            command=self.command,
+            **final_config
+        )
+        
+        # Ajouter des effets de survol
+        self._add_hover_effects(button, style_config)
+        
+        return button
+    
+    def _add_hover_effects(self, button, style_config):
+        """Ajoute des effets de survol au bouton"""
+        original_bg = style_config['bg']
+        hover_bg = style_config['activebackground']
+        
+        def on_enter(event):
+            button.config(bg=hover_bg)
+        
+        def on_leave(event):
+            button.config(bg=original_bg)
+        
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
+
+class NavButton(StyledButton):
+    """Bouton spécialisé pour la navigation"""
+    
+    def __init__(self, parent, text, command=None, nav_type='home', **kwargs):
+        # Mapping des types de navigation vers les styles et icônes
+        nav_configs = {
+            'home': {'button_type': 'success', 'icon': '🏠'},
+            'students': {'button_type': 'primary', 'icon': '👥'},
+            'events': {'button_type': 'info', 'icon': '📊'},
+            'import': {'button_type': 'warning', 'icon': '📁'},
+            'export': {'button_type': 'info', 'icon': '💾'},
+            'settings': {'button_type': 'light', 'icon': '⚙️'}
+        }
+        
+        config = nav_configs.get(nav_type, nav_configs['home'])
+        
+        super().__init__(
+            parent, 
+            text, 
+            command, 
+            button_type=config['button_type'],
+            icon=config['icon'],
+            **kwargs
+        )
+
+class ActionButton(StyledButton):
+    """Bouton spécialisé pour les actions"""
+    
+    def __init__(self, parent, text, command=None, action_type='save', **kwargs):
+        # Mapping des types d'actions
+        action_configs = {
+            'save': {'button_type': 'success', 'icon': '💾'},
+            'delete': {'button_type': 'danger', 'icon': '🗑️'},
+            'edit': {'button_type': 'info', 'icon': '✏️'},
+            'add': {'button_type': 'success', 'icon': '➕'},
+            'cancel': {'button_type': 'light', 'icon': '❌'},
+            'refresh': {'button_type': 'info', 'icon': '🔄'},
+            'search': {'button_type': 'primary', 'icon': '🔍'},
+            'export': {'button_type': 'warning', 'icon': '📤'},
+            'import': {'button_type': 'warning', 'icon': '📥'},
+            'print': {'button_type': 'light', 'icon': '🖨️'}
+        }
+        
+        config = action_configs.get(action_type, action_configs['save'])
+        
+        super().__init__(
+            parent, 
+            text, 
+            command, 
+            button_type=config['button_type'],
+            icon=config['icon'],
+            **kwargs
+        )
