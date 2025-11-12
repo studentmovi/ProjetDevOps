@@ -1,0 +1,81 @@
+{
+  "events": {
+    "sortie_theatre": {
+      "id": "sortie_theatre",
+      "nom": "Sortie Théâtre",
+      "date": "15/11/2024",
+      "cout_total": 450.0,
+      "participants": {},
+      "description": "Sortie au théâtre municipal"
+    },
+    "visite_musee": {
+      "id": "visite_musee",
+      "nom": "Visite Musée",
+      "date": "20/11/2024",
+      "cout_total": 320.0,
+      "participants": {},
+      "description": "Visite du musée d'histoire"
+    },
+    "concert": {
+      "id": "concert",
+      "nom": "Concert",
+      "date": "25/11/2024",
+      "cout_total": 600.0,
+      "participants": {
+        "1": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        },
+        "2": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        },
+        "3": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        },
+        "4": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        },
+        "5": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        },
+        "6": {
+          "vente": 0.0,
+          "prix_final": 95.83333333333333,
+          "prix_base": 100.0
+        }
+      },
+      "description": "Concert de musique classique",
+      "ventes_activees": true,
+      "total_ventes": 25.0
+    }
+  },
+  "student_events": {
+    "1": [
+      "concert"
+    ],
+    "2": [
+      "concert"
+    ],
+    "3": [
+      "concert"
+    ],
+    "4": [
+      "concert"
+    ],
+    "5": [
+      "concert"
+    ],
+    "6": [
+      "concert"
+    ]
+  }
+}
