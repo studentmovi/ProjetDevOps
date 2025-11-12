@@ -12,10 +12,37 @@ class EventDataManager:
         if os.path.exists(self.data_file):
             try:
                 with open(self.data_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Migration des données existantes vers le nouveau format
+                    return self.migrate_data_format(data)
             except:
                 return self.get_default_data()
         return self.get_default_data()
+    
+    def migrate_data_format(self, data):
+        """Migre les anciennes données vers le nouveau format avec ventes"""
+        if "events" in data:
+            for event_id, event in data["events"].items():
+                # Ajouter les nouveaux champs s'ils n'existent pas
+                if "ventes_activees" not in event:
+                    event["ventes_activees"] = False
+                if "total_ventes" not in event:
+                    event["total_ventes"] = 0.0
+                
+                # Migrer l'ancien format des participants si nécessaire
+                if "participants" in event:
+                    for student_id, participant_data in event["participants"].items():
+                        # Ancienne structure : {"vente": 0, "prix_final": 0}
+                        # Nouvelle structure : {"prix_base": 0, "prix_final": 0}
+                        if "vente" in participant_data and "prix_base" not in participant_data:
+                            # Supprimer l'ancien champ "vente" au niveau individuel
+                            participant_data.pop("vente", None)
+                        if "prix_base" not in participant_data:
+                            participant_data["prix_base"] = 0.0
+                        if "prix_final" not in participant_data:
+                            participant_data["prix_final"] = 0.0
+        
+        return data
     
     def get_default_data(self):
         """Structure de données par défaut"""
@@ -26,8 +53,8 @@ class EventDataManager:
                     "nom": "Sortie Théâtre",
                     "date": "15/11/2024",
                     "cout_total": 450.0,
-                    "ventes_activees": False,  # NOUVEAU : Si les ventes sont activées pour cet événement
-                    "total_ventes": 0.0,       # NOUVEAU : Total des ventes pour l'événement
+                    "ventes_activees": False,  # Si les ventes sont activées pour cet événement
+                    "total_ventes": 0.0,       # Total des ventes pour l'événement
                     "participants": {},  # student_id: {prix_base: 0, prix_final: 0}
                     "description": "Sortie au théâtre municipal"
                 },
@@ -138,8 +165,9 @@ class EventDataManager:
         
         # Calcul de la réduction si les ventes sont activées
         reduction_par_personne = 0.0
-        if event["ventes_activees"] and event["total_ventes"] > 0:
-            reduction_par_personne = event["total_ventes"] / nb_participants
+        # Utiliser get() pour éviter les KeyError
+        if event.get("ventes_activees", False) and event.get("total_ventes", 0.0) > 0:
+            reduction_par_personne = event.get("total_ventes", 0.0) / nb_participants
         
         # Mise à jour des prix pour chaque participant
         for student_id, data in participants.items():
