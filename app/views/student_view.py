@@ -126,21 +126,27 @@ class StudentsView:
         self.header_selection_info.pack(side="left")
     
     def create_filter_section(self):
-        """Section filtres avec événements"""
+        """Section filtres - SANS bouton test"""
         self.filter_panel = FilterPanel(self.frame, "Filtres Avancés")
         panel_frame = self.filter_panel.create()
         panel_frame.pack(fill="x", padx=20, pady=8)
         
-        # Filtres standard
-        from data.sample_data import get_available_years, get_available_classes
+        # ✅ Utilisation des nouvelles fonctions pour récupérer les données
+        from data.sample_data import get_years_data_source, get_classes_data_source
+        
+        # Années disponibles avec format uniforme
+        years_list = ["Toutes"] + [f"{year}ème" for year in get_years_data_source()]
         
         self.year_var, self.year_combo = self.filter_panel.add_combobox_filter(
-            "year", "Année", ["Toutes"] + get_available_years(),
+            "year", "Année", years_list,
             callback=self.controller.on_year_changed
         )
         
+        # ✅ TOUTES les classes disponibles
+        classes_list = ["Toutes"] + get_classes_data_source()
+        
         self.class_var, self.class_combo = self.filter_panel.add_combobox_filter(
-            "class", "Classe", ["Toutes"] + get_available_classes(),
+            "class", "Classe", classes_list,
             callback=self.controller.on_filter_changed
         )
         
@@ -150,19 +156,23 @@ class StudentsView:
         )
         
         # Filtre par événement
-        events_list = self.controller.get_events_for_filter()
+        try:
+            events_list = self.controller.get_events_for_filter()
+        except:
+            events_list = []
+        
         self.event_var, self.event_combo = self.filter_panel.add_combobox_filter(
             "event", "Événement", ["Aucun"] + events_list,
             callback=self.controller.on_event_changed
         )
         
-        # Filtre de tri
+        # TRI
         self.sort_var, self.sort_combo = self.filter_panel.add_combobox_filter(
             "sort", "Tri", ["Nom A-Z", "Nom Z-A", "Classe", "Année"],
             default="Nom A-Z", callback=self.controller.on_sort_changed
         )
         
-        # Boutons du panel
+        # Boutons du panel - PLUS DE BOUTON TEST
         self.filter_panel.add_action_buttons(
             reset_callback=self.controller.reset_filters,
             export_callback=self.controller.export_filtered_data
@@ -249,51 +259,62 @@ class StudentsView:
     # ====================== ÉVÉNEMENTS DU TABLEAU ======================
     def on_tree_click(self, event):
         """Gère les clics sur le tableau"""
-        item = self.tree.identify_row(event.y)
-        column = self.tree.identify_column(event.x)
-        
-        if item and column:
-            col_index = int(column.replace('#', '')) - 1
-            if col_index == 0:  # Colonne sélection
-                values = self.tree.item(item)['values']
-                student_id = int(values[1])
-                
-                is_selected = self.controller.toggle_student_selection(student_id)
-                self.tree.set(item, "Sél", "☑️" if is_selected else "☐")
-                self.update_info_labels()
-                
-            elif col_index == 7:  # Colonne actions
-                self.show_student_actions(item, event)
+        try:
+            item = self.tree.identify_row(event.y)
+            column = self.tree.identify_column(event.x)
+            
+            if item and column:
+                col_index = int(column.replace('#', '')) - 1
+                if col_index == 0:  # Colonne sélection
+                    values = self.tree.item(item)['values']
+                    student_id = int(values[1])
+                    
+                    is_selected = self.controller.toggle_student_selection(student_id)
+                    self.tree.set(item, "Sél", "☑️" if is_selected else "☐")
+                    self.update_info_labels()
+                    
+                elif col_index == 7:  # Colonne actions
+                    self.show_student_actions(item, event)
+        except Exception as e:
+            print(f"❌ Erreur on_tree_click: {e}")
     
     def on_tree_double_click(self, event):
         """Gère les double-clics pour voir les détails"""
-        item = self.tree.identify_row(event.y)
-        if item:
-            values = self.tree.item(item)['values']
-            student_id = values[1]
-            self.controller.view_student(student_id)
+        try:
+            item = self.tree.identify_row(event.y)
+            if item:
+                values = self.tree.item(item)['values']
+                student_id = values[1]
+                self.controller.view_student(student_id)
+        except Exception as e:
+            print(f"❌ Erreur on_tree_double_click: {e}")
     
     def show_student_actions(self, item, event):
         """Affiche le menu contextuel des actions"""
-        values = self.tree.item(item)['values']
-        student_id = int(values[1])
-        
-        menu = tk.Menu(self.tree, tearoff=0)
-        menu.add_command(label="👁️ Voir détails", 
-                        command=lambda: self.controller.view_student(student_id))
-        menu.add_command(label="📝 Modifier", 
-                        command=lambda: self.controller.edit_student(student_id))
-        menu.add_separator()
-        menu.add_command(label="📅 Assigner à événement", 
-                        command=lambda: self.assign_single_to_event(student_id))
-        menu.add_separator()
-        menu.add_command(label="🗑️ Supprimer", 
-                        command=lambda: self.controller.delete_student(student_id))
-        
         try:
+            values = self.tree.item(item)['values']
+            student_id = int(values[1])
+            
+            menu = tk.Menu(self.tree, tearoff=0)
+            menu.add_command(label="👁️ Voir détails", 
+                            command=lambda: self.controller.view_student(student_id))
+            menu.add_command(label="📝 Modifier", 
+                            command=lambda: self.controller.edit_student(student_id))
+            menu.add_separator()
+            menu.add_command(label="📅 Assigner à événement", 
+                            command=lambda: self.assign_single_to_event(student_id))
+            menu.add_separator()
+            menu.add_command(label="🗑️ Supprimer", 
+                            command=lambda: self.controller.delete_student(student_id))
+            
             menu.tk_popup(event.x_root, event.y_root)
+        except Exception as e:
+            print(f"❌ Erreur show_student_actions: {e}")
         finally:
-            menu.grab_release()
+            try:
+                menu.grab_release()
+            except:
+                pass
     
     def assign_single_to_event(self, student_id):
         """Assigne un seul élève à un événement"""
@@ -303,69 +324,78 @@ class StudentsView:
     # ====================== MISE À JOUR DE L'AFFICHAGE ======================
     def update_display(self):
         """Met à jour l'affichage complet (appelé par le contrôleur)"""
-        # Vider le tableau
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        
-        # Remplir avec les données filtrées
-        filtered_students = self.controller.get_filtered_students()
-        selected_students = self.controller.get_selected_students()
-        
-        for i, student in enumerate(filtered_students):
-            tag = 'evenrow' if i % 2 == 0 else 'oddrow'
-            selected_mark = "☑️" if student["id"] in selected_students else "☐"
+        try:
+            # Vider le tableau
+            for item in self.tree.get_children():
+                self.tree.delete(item)
             
-            student_events = self.controller.get_student_events(student)
+            # Remplir avec les données filtrées
+            filtered_students = self.controller.get_filtered_students()
+            selected_students = self.controller.get_selected_students()
             
-            self.tree.insert("", "end", values=(
-                selected_mark,
-                student["id"],
-                student["nom"],
-                student["prenom"],
-                f"{student['annee']}ème",
-                student["classe"],
-                student_events,
-                "👁️ 📝 🗑️"
-            ), tags=(tag,))
-        
-        # Couleurs alternées
-        self.tree.tag_configure('evenrow', background='#f8f9fa')
-        self.tree.tag_configure('oddrow', background='#ffffff')
-        
-        # Mettre à jour les informations
-        self.update_info_labels()
+            for i, student in enumerate(filtered_students):
+                tag = 'evenrow' if i % 2 == 0 else 'oddrow'
+                selected_mark = "☑️" if student["id"] in selected_students else "☐"
+                
+                try:
+                    student_events = self.controller.get_student_events(student)
+                except:
+                    student_events = "Aucun"
+                
+                self.tree.insert("", "end", values=(
+                    selected_mark,
+                    student["id"],
+                    student["nom"],
+                    student["prenom"],
+                    f"{student['annee']}ème",  # ✅ Format uniforme
+                    student["classe"],
+                    student_events,
+                    "👁️ 📝 🗑️"
+                ), tags=(tag,))
+            
+            # Couleurs alternées
+            self.tree.tag_configure('evenrow', background='#f8f9fa')
+            self.tree.tag_configure('oddrow', background='#ffffff')
+            
+            # Mettre à jour les informations
+            self.update_info_labels()
+        except Exception as e:
+            print(f"❌ Erreur update_display: {e}")
     
     def update_info_labels(self):
         """Met à jour les labels d'information"""
-        filtered_students = self.controller.get_filtered_students()
-        students_data = self.controller.get_students_data()
-        selected_students = self.controller.get_selected_students()
-        
-        count = len(filtered_students)
-        total = len(students_data)
-        selected = len(selected_students)
-        
-        # Informations dans le header
-        if count == total:
-            self.header_filter_info.config(text=f"✅ Tous affichés ({count})")
-        else:
-            self.header_filter_info.config(text=f"🔍 {count}/{total} filtrés")
-        
-        if selected > 0:
-            self.header_selection_info.config(text=f"🔸 {selected} sélectionnés")
-        else:
-            self.header_selection_info.config(text="")
-        
-        # Informations détaillées en bas
-        if count > 0:
-            years_in_results = set(student["annee"] for student in filtered_students)
-            classes_in_results = set(student["classe"] for student in filtered_students)
-            self.detail_info.config(
-                text=f"Années: {', '.join(sorted(years_in_results))} • "
-                     f"Classes: {', '.join(sorted(classes_in_results))}"
-            )
-        else:
-            self.detail_info.config(text="Aucun résultat à afficher")
+        try:
+            filtered_students = self.controller.get_filtered_students()
+            students_data = self.controller.get_students_data()
+            selected_students = self.controller.get_selected_students()
+            
+            count = len(filtered_students)
+            total = len(students_data)
+            selected = len(selected_students)
+            
+            # Informations dans le header
+            if count == total:
+                self.header_filter_info.config(text=f"✅ Tous affichés ({count})")
+            else:
+                self.header_filter_info.config(text=f"🔍 {count}/{total} filtrés")
+            
+            if selected > 0:
+                self.header_selection_info.config(text=f"🔸 {selected} sélectionnés")
+            else:
+                self.header_selection_info.config(text="")
+            
+            # Informations détaillées en bas
+            if count > 0:
+                years_in_results = set(str(student["annee"]) for student in filtered_students)
+                classes_in_results = set(student["classe"] for student in filtered_students)
+                self.detail_info.config(
+                    text=f"Années: {', '.join(sorted(years_in_results))} • "
+                         f"Classes: {', '.join(sorted(classes_in_results))}"
+                )
+            else:
+                self.detail_info.config(text="Aucun résultat à afficher")
+        except Exception as e:
+            print(f"❌ Erreur update_info_labels: {e}")
     
     def show(self):
         self.frame.pack(fill="both", expand=True)
