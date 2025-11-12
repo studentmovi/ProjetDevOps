@@ -6,7 +6,9 @@
       "date": "15/11/2024",
       "cout_total": 450.0,
       "participants": {},
-      "description": "Sortie au théâtre municipal"
+      "description": "Sortie au théâtre municipal",
+      "ventes_activees": false,
+      "total_ventes": 0.0
     },
     "visite_musee": {
       "id": "visite_musee",
@@ -14,7 +16,9 @@
       "date": "20/11/2024",
       "cout_total": 320.0,
       "participants": {},
-      "description": "Visite du musée d'histoire"
+      "description": "Visite du musée d'histoire",
+      "ventes_activees": false,
+      "total_ventes": 0.0
     },
     "concert": {
       "id": "concert",
@@ -24,38 +28,38 @@
       "participants": {
         "1": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         },
         "2": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         },
         "3": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         },
         "4": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         },
         "5": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         },
         "6": {
           "vente": 0.0,
-          "prix_final": 95.83333333333333,
+          "prix_final": 88.75,
           "prix_base": 100.0
         }
       },
       "description": "Concert de musique classique",
       "ventes_activees": true,
-      "total_ventes": 25.0
+      "total_ventes": 67.5
     }
   },
   "student_events": {
