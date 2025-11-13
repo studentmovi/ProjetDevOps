@@ -1,7 +1,5 @@
-import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import pandas as pd
 from utils.logger import log_info, log_warning, log_error
 from utils.appStyles import AppStyles
 from views.home_view import HomeView
@@ -76,54 +74,85 @@ class CulturalEventManager:
         nav_buttons = ttk.Frame(nav_container)
         nav_buttons.pack(side="right")
         
-        ttk.Button(nav_buttons, 
-                  text="🏠 Accueil", 
-                  style="Nav.Home.TButton",
-                  command=lambda: self.show_view('home')).pack(side="left", padx=3)
+        # Bouton Accueil
+        home_btn = tk.Button(nav_buttons, 
+                            text="🏠 Accueil",
+                            command=lambda: self.show_view('home'),
+                            bg=self.styles.colors['primary'],
+                            fg='white',
+                            font=("Helvetica", 9, "bold"),
+                            relief='flat',
+                            padx=12,
+                            pady=6,
+                            cursor='hand2')
+        home_btn.pack(side="left", padx=(0, 5))
         
-        ttk.Button(nav_buttons, 
-                  text="👥 Élèves", 
-                  style="Nav.Students.TButton",
-                  command=lambda: self.show_view('students')).pack(side="left", padx=3)
+        # Bouton Élèves
+        students_btn = tk.Button(nav_buttons, 
+                                text="👥 Élèves",
+                                command=lambda: self.show_view('students'),
+                                bg=self.styles.colors['primary'],
+                                fg='white',
+                                font=("Helvetica", 9, "bold"),
+                                relief='flat',
+                                padx=12,
+                                pady=6,
+                                cursor='hand2')
+        students_btn.pack(side="left", padx=(0, 5))
         
-        ttk.Button(nav_buttons, 
-                  text="📊 Événements", 
-                  style="Nav.Events.TButton",
-                  command=self.show_events_view).pack(side="left", padx=3)
+        # Bouton Événements
+        events_btn = tk.Button(nav_buttons, 
+                              text="📅 Événements",
+                              command=self.show_events_view,
+                              bg=self.styles.colors['primary'],
+                              fg='white',
+                              font=("Helvetica", 9, "bold"),
+                              relief='flat',
+                              padx=12,
+                              pady=6,
+                              cursor='hand2')
+        events_btn.pack(side="left", padx=(0, 5))
         
-        ttk.Button(nav_buttons, 
-                  text="📁 Import Excel", 
-                  style="Nav.Import.TButton",
-                  command=self.load_excel).pack(side="left", padx=3)
+        # Bouton Excel
+        excel_btn = tk.Button(nav_buttons, 
+                             text="📊 Excel",
+                             command=self.load_excel,
+                             bg=self.styles.colors['success'],
+                             fg='white',
+                             font=("Helvetica", 9, "bold"),
+                             relief='flat',
+                             padx=12,
+                             pady=6,
+                             cursor='hand2')
+        excel_btn.pack(side="left")
 
     def show_view(self, view_name):
-        """Affiche une vue et cache les autres"""
+        """Affiche une vue spécifique et cache les autres"""
+        # Cacher la vue actuelle
         if self.current_view and self.current_view in self.views:
             self.views[self.current_view].hide()
         
+        # Afficher la nouvelle vue
         if view_name in self.views:
             self.views[view_name].show()
             self.current_view = view_name
             log_info(f"Vue '{view_name}' affichée")
+        else:
+            log_warning(f"Vue '{view_name}' non trouvée")
 
     def show_events_view(self):
-        """Affiche la vue des événements (placeholder)"""
-        messagebox.showinfo("Info", "Vue des événements en cours de développement")
-        log_info("Tentative d'accès à la vue événements")
+        """Affiche la vue des événements (à développer)"""
+        messagebox.showinfo("Info", "Vue des événements à développer")
 
     def load_excel(self):
-        """Charge un fichier Excel"""
-        file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.xls")])
-        if not file_path:
-            return
-
-        try:
-            df = pd.read_excel(file_path)
-            messagebox.showinfo("Succès", f"Fichier Excel chargé: {len(df)} lignes")
-            log_info(f"Fichier Excel chargé avec succès: {len(df)} lignes")
-        except Exception as e:
-            log_error(e, "Erreur lors du chargement du fichier Excel")
-            messagebox.showerror("Erreur", f"Impossible de charger le fichier:\n{str(e)}")
+        """Lance l'import Excel depuis la navigation"""
+        if 'students' in self.views:
+            # Basculer vers la vue élèves et lancer l'import
+            self.show_view('students')
+            # Délai pour s'assurer que la vue est affichée
+            self.root.after(100, lambda: self.views['students']._on_import_excel())
+        else:
+            messagebox.showwarning("Attention", "Vue des élèves non disponible")
 
 
 if __name__ == "__main__":
