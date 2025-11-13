@@ -25,8 +25,7 @@ class StudentView:
         self.sort_combo = None
         
         # Conteneurs pour l'affichage
-        self.students_container = None
-        self.canvas = None  # Ajout pour pouvoir configurer la largeur
+        self.treeview = None  # Remplace students_container
         self.status_label = None
         self.toolbar_frame = None
         self.filter_panel = None
@@ -356,40 +355,71 @@ class StudentView:
         self.search_entry.bind('<FocusOut>', on_focus_out)
     
     def _create_main_content(self):
-        """Crée la zone principale d'affichage des élèves"""
+        """Crée la zone principale avec un Treeview (solution native)"""
         main_frame = ttk.Frame(self.frame)
         main_frame.pack(fill="both", expand=True, pady=(0, 10))
         
-        # Canvas avec configuration pour largeur complète
-        self.canvas = tk.Canvas(main_frame, bg="#f8f9fa", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.canvas.yview)
+        # ========== TREEVIEW AVEC SCROLLBARS ==========
+        # Définir les colonnes
+        columns = ("selection", "nom", "classe", "annee", "email", "source", "evenements", "actions")
         
-        self.students_container = ttk.Frame(self.canvas)
+        self.treeview = ttk.Treeview(
+            main_frame,
+            columns=columns,
+            show="tree headings",  # Afficher l'arbre + en-têtes
+            height=15,
+            selectmode="extended"  # Sélection multiple
+        )
         
-        # Configuration pour s'adapter à la largeur du canvas
-        def configure_canvas_width(event=None):
-            canvas_width = self.canvas.winfo_width()
-            self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+        # Scrollbars
+        v_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.treeview.yview)
+        h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.treeview.xview)
         
-        def configure_scroll_region(event=None):
-            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.treeview.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
         
-        # Créer la fenêtre dans le canvas
-        self.canvas_window = self.canvas.create_window((0, 0), window=self.students_container, anchor="nw")
+        # Configuration des colonnes
+        self.treeview.column("#0", width=30, minwidth=30, stretch=False)  # Icône arbre
+        self.treeview.column("selection", width=50, minwidth=50, stretch=False, anchor="center")
+        self.treeview.column("nom", width=200, minwidth=150, stretch=True)
+        self.treeview.column("classe", width=80, minwidth=60, stretch=False)
+        self.treeview.column("annee", width=80, minwidth=60, stretch=False)
+        self.treeview.column("email", width=250, minwidth=150, stretch=True)
+        self.treeview.column("source", width=80, minwidth=60, stretch=False)
+        self.treeview.column("evenements", width=120, minwidth=100, stretch=False)
+        self.treeview.column("actions", width=200, minwidth=180, stretch=False)
         
-        # Bindings pour adapter la largeur
-        self.canvas.bind('<Configure>', configure_canvas_width)
-        self.students_container.bind('<Configure>', configure_scroll_region)
+        # En-têtes des colonnes
+        self.treeview.heading("#0", text="", anchor="w")
+        self.treeview.heading("selection", text="☑️", anchor="center")
+        self.treeview.heading("nom", text="👤 Nom et Prénom", anchor="w")
+        self.treeview.heading("classe", text="🏫 Classe", anchor="center")
+        self.treeview.heading("annee", text="📚 Année", anchor="center")
+        self.treeview.heading("email", text="📧 Email", anchor="w")
+        self.treeview.heading("source", text="📊 Source", anchor="center")
+        self.treeview.heading("evenements", text="📅 Événements", anchor="center")
+        self.treeview.heading("actions", text="⚙️ Actions", anchor="center")
         
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        # Style pour les lignes alternées
+        self.treeview.tag_configure("selected", background="#e3f2fd")
+        self.treeview.tag_configure("odd", background="#f8f9fa")
+        self.treeview.tag_configure("even", background="white")
         
-        self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        # Placement des widgets
+        self.treeview.grid(row=0, column=0, sticky="nsew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        def _on_mousewheel(event):
-            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        # Configuration du grid
+        main_frame.grid_rowconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
         
-        self.canvas.bind("<MouseWheel>", _on_mousewheel)
+        # Bindings pour les actions
+        self.treeview.bind("<Double-1>", self._on_treeview_double_click)
+        self.treeview.bind("<Button-3>", self._on_treeview_right_click)  # Menu contextuel
+        self.treeview.bind("<<TreeviewSelect>>", self._on_treeview_select)
+        
+        # Navigation clavier native déjà disponible ! 🎉
+        # Up/Down, Page Up/Down, Home/End, etc. fonctionnent automatiquement
     
     def _create_status_bar(self):
         """Crée la barre de statut"""
@@ -406,62 +436,88 @@ class StudentView:
         self.status_label.pack(side="left", fill="x", expand=True)
     
     def update_display(self):
-        """Met à jour l'affichage des élèves"""
-        print("DEBUG: Début de update_display()")
+        """Met à jour l'affichage des élèves dans le Treeview"""
+        print("DEBUG: Début de update_display() avec Treeview")
         
         if not self.controller:
             print("DEBUG: Contrôleur non initialisé!")
             self.status_label.config(text="Erreur: Contrôleur non initialisé")
             return
         
-        print("DEBUG: Nettoyage des widgets existants...")
-        for widget in self.students_container.winfo_children():
-            widget.destroy()
+        # Vider le treeview
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
         
         try:
             filtered_students = self.controller.get_filtered_students()
             selected_students = self.controller.get_selected_students()
             print(f"DEBUG: Récupéré {len(filtered_students)} élèves filtrés")
-            print(f"DEBUG: Récupéré {len(selected_students)} élèves sélectionnés")
         except Exception as e:
             print(f"DEBUG: Erreur récupération données: {e}")
             filtered_students = []
             selected_students = []
         
         if not filtered_students:
-            print("DEBUG: Aucun élève filtré - affichage message vide")
-            no_data_frame = ttk.Frame(self.students_container)
-            no_data_frame.pack(fill="both", expand=True, pady=50)
-            
-            no_data_label = ttk.Label(
-                no_data_frame,
-                text="🔍 Aucun élève ne correspond aux critères de filtrage",
-                font=("Arial", 14),
-                foreground="#6c757d"
-            )
-            no_data_label.pack(expand=True)
+            # Ajouter une ligne indiquant qu'il n'y a pas de données
+            self.treeview.insert("", "end", text="", values=(
+                "", "🔍 Aucun élève ne correspond aux critères", "", "", "", "", "", ""
+            ))
         else:
-            print(f"DEBUG: Création de {len(filtered_students)} cartes d'élèves")
             for i, student in enumerate(filtered_students):
-                if i < 5:  # Log seulement les 5 premiers pour éviter le spam
-                    print(f"DEBUG: Création carte {i+1} pour {student.get('prenom', 'Unknown')} {student.get('nom', 'Unknown')}")
                 try:
                     is_selected = student["id"] in selected_students
-                    card = self._create_full_width_student_row(
-                        self.students_container,
-                        student,
-                        is_selected
+                    
+                    # Calcul de l'année
+                    if 'annee' in student:
+                        year_text = f"{student['annee']}ème"
+                    else:
+                        classe = student.get("classe", "")
+                        year = ''.join(filter(str.isdigit, classe))
+                        year_text = f"{year}ème" if year else "N/A"
+                    
+                    # Email
+                    email_text = ""
+                    if 'email' in student and student['email'] and student['email'] != 'nan':
+                        email_text = student['email']
+                        if len(email_text) > 35:
+                            email_text = email_text[:32] + "..."
+                    
+                    # Source
+                    source_text = "📊 Excel" if student.get('source') == 'excel' else "📄 JSON"
+                    
+                    # Nom complet
+                    nom_complet = f"{student['prenom']} {student['nom'].upper()}"
+                    if is_selected:
+                        nom_complet += " ✓"
+                    
+                    # Sélection
+                    selection_text = "☑️" if is_selected else "☐"
+                    
+                    # Actions (on mettra des boutons plus tard)
+                    actions_text = "👁️ Voir | 🗑️ Supprimer"
+                    
+                    # Insérer la ligne
+                    item_id = self.treeview.insert("", "end", 
+                        text="👤",  # Icône dans la première colonne
+                        values=(
+                            selection_text,
+                            nom_complet,
+                            student['classe'],
+                            year_text,
+                            email_text,
+                            source_text,
+                            "📅 Aucun",
+                            actions_text
+                        ),
+                        tags=("selected" if is_selected else ("odd" if i % 2 else "even"),)
                     )
-                    # CORRECTION CRUCIALE: utiliser sticky="ew" pour étendre horizontalement
-                    card.pack(fill="x", padx=0, pady=1, expand=True)
-                    if i < 5:
-                        print(f"DEBUG: Carte {i+1} créée et packée avec succès")
+                    
+                    # Stocker l'ID de l'étudiant pour référence
+                    self.treeview.set(item_id, "student_id", student["id"])
+                    
                 except Exception as e:
-                    print(f"DEBUG: Erreur création carte {i+1}: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    print(f"DEBUG: Erreur création ligne {i+1}: {e}")
         
-        print("DEBUG: Mise à jour du statut...")
         # Mettre à jour le statut
         try:
             total_students = len(self.controller.get_students_data())
@@ -478,169 +534,74 @@ class StudentView:
             status_text += f" | 📁 Source: {source}"
             
             self.status_label.config(text=status_text)
-            print(f"DEBUG: Statut mis à jour: {status_text}")
         except Exception as e:
-            print(f"DEBUG: Erreur mise à jour statut: {e}")
             self.status_label.config(text=f"❌ Erreur de statut: {e}")
         
         self._update_toolbar_buttons()
-        print("DEBUG: Fin de update_display()")
-        
-        # Forcer la mise à jour de la largeur après ajout des widgets
-        self.root.after(10, self._update_canvas_width)
+        print("DEBUG: Fin de update_display() avec Treeview")
     
-    def _update_canvas_width(self):
-        """Force la mise à jour de la largeur du canvas"""
+    # ========== ÉVÉNEMENTS TREEVIEW ==========
+    def _on_treeview_double_click(self, event):
+        """Double-clic sur une ligne du treeview"""
+        item = self.treeview.selection()[0] if self.treeview.selection() else None
+        if item:
+            try:
+                student_id = self.treeview.set(item, "student_id")
+                if student_id:
+                    self._safe_view_student(student_id)
+            except:
+                pass
+    
+    def _on_treeview_right_click(self, event):
+        """Clic droit sur une ligne du treeview - Menu contextuel"""
+        item = self.treeview.identify_row(event.y)
+        if item:
+            self.treeview.selection_set(item)
+            
+            # Créer le menu contextuel
+            context_menu = tk.Menu(self.root, tearoff=0)
+            context_menu.add_command(label="👁️ Voir détails", command=lambda: self._context_view_student(item))
+            context_menu.add_separator()
+            context_menu.add_command(label="☑️ Sélectionner", command=lambda: self._context_toggle_selection(item))
+            context_menu.add_separator()
+            context_menu.add_command(label="🗑️ Supprimer", command=lambda: self._context_delete_student(item))
+            
+            try:
+                context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                context_menu.grab_release()
+    
+    def _on_treeview_select(self, event):
+        """Sélection d'une ligne dans le treeview"""
+        # Ici on peut gérer la sélection si nécessaire
+        pass
+    
+    def _context_view_student(self, item):
+        """Voir un étudiant depuis le menu contextuel"""
         try:
-            if hasattr(self, 'canvas') and hasattr(self, 'canvas_window'):
-                canvas_width = self.canvas.winfo_width()
-                if canvas_width > 1:  # S'assurer que le canvas est bien dimensionné
-                    self.canvas.itemconfig(self.canvas_window, width=canvas_width)
-        except Exception as e:
-            print(f"Erreur mise à jour largeur canvas: {e}")
+            student_id = self.treeview.set(item, "student_id")
+            if student_id:
+                self._safe_view_student(student_id)
+        except:
+            pass
     
-    def _create_full_width_student_row(self, parent, student, is_selected):
-        """Crée une ligne d'élève qui prend VRAIMENT toute la largeur"""
-        
-        # Frame principale qui s'étend sur toute la largeur
-        main_frame = ttk.Frame(parent, padding="4")
-        if is_selected:
-            main_frame.configure(relief="solid", borderwidth=2)
-        else:
-            main_frame.configure(relief="ridge", borderwidth=1)
-        
-        # ========== LIGNE PRINCIPALE avec Grid pour plus de contrôle ==========
-        content_frame = ttk.Frame(main_frame)
-        content_frame.pack(fill="both", expand=True)
-        
-        # Configuration des colonnes pour qu'elles s'étendent
-        content_frame.grid_columnconfigure(0, weight=0, minsize=40)   # Checkbox
-        content_frame.grid_columnconfigure(1, weight=2, minsize=180)  # Nom
-        content_frame.grid_columnconfigure(2, weight=1, minsize=80)   # Classe
-        content_frame.grid_columnconfigure(3, weight=1, minsize=70)   # Année
-        content_frame.grid_columnconfigure(4, weight=3, minsize=200)  # Email/Info
-        content_frame.grid_columnconfigure(5, weight=1, minsize=100)  # Événements
-        content_frame.grid_columnconfigure(6, weight=0, minsize=240)  # Boutons
-        
-        # ========== CHECKBOX ==========
-        var = tk.BooleanVar(value=is_selected)
-        checkbox = ttk.Checkbutton(
-            content_frame,
-            variable=var,
-            command=lambda: self._safe_toggle_student_selection(student["id"])
-        )
-        checkbox.grid(row=0, column=0, sticky="w", padx=(5, 10))
-        
-        # ========== NOM ET PRÉNOM ==========
-        name_text = f"👤 {student['prenom']} {student['nom'].upper()}"
-        if is_selected:
-            name_text += " ✓"
-            
-        name_label = ttk.Label(
-            content_frame,
-            text=name_text,
-            font=("Arial", 10, "bold"),
-            foreground="#2c3e50" if not is_selected else "#1565c0"
-        )
-        name_label.grid(row=0, column=1, sticky="ew", padx=(0, 10))
-        
-        # ========== CLASSE ==========
-        class_label = ttk.Label(
-            content_frame,
-            text=f"🏫 {student['classe']}",
-            font=("Arial", 9, "bold"),
-            foreground="#495057"
-        )
-        class_label.grid(row=0, column=2, sticky="ew", padx=(0, 10))
-        
-        # ========== ANNÉE ==========
-        if 'annee' in student:
-            year_text = f"📚 {student['annee']}ème"
-        else:
-            classe = student.get("classe", "")
-            year = ''.join(filter(str.isdigit, classe))
-            year_text = f"📚 {year}ème" if year else "📚 N/A"
-        
-        year_label = ttk.Label(
-            content_frame,
-            text=year_text,
-            font=("Arial", 9),
-            foreground="#6c757d"
-        )
-        year_label.grid(row=0, column=3, sticky="ew", padx=(0, 10))
-        
-        # ========== EMAIL ET INFORMATIONS ==========
-        info_frame = ttk.Frame(content_frame)
-        info_frame.grid(row=0, column=4, sticky="ew", padx=(0, 10))
-        
-        if 'email' in student and student['email'] and student['email'] != 'nan':
-            email_text = student['email']
-            if len(email_text) > 35:
-                email_text = email_text[:32] + "..."
-                
-            email_label = ttk.Label(
-                info_frame,
-                text=f"📧 {email_text}",
-                font=("Arial", 8),
-                foreground="#6c757d"
-            )
-            email_label.pack(anchor="w")
-        
-        # Source des données
-        if 'source' in student and student['source'] == 'excel':
-            source_text = "📊 Excel"
-            source_color = "#007bff"
-        else:
-            source_text = "📄 JSON"
-            source_color = "#6c757d"
-            
-        source_label = ttk.Label(
-            info_frame,
-            text=source_text,
-            font=("Arial", 7, "italic"),
-            foreground=source_color
-        )
-        source_label.pack(anchor="w")
-        
-        # ========== ÉVÉNEMENTS ==========
-        events_label = ttk.Label(
-            content_frame,
-            text="📅 Aucun",
-            font=("Arial", 8),
-            foreground="#6c757d"
-        )
-        events_label.grid(row=0, column=5, sticky="ew", padx=(0, 15))
-        
-        # ========== BOUTONS D'ACTION ==========
-        buttons_frame = ttk.Frame(content_frame)
-        buttons_frame.grid(row=0, column=6, sticky="e")
-        
-        # Boutons compacts
-        view_btn = ttk.Button(
-            buttons_frame,
-            text="👁️ Voir",
-            width=8,
-            command=lambda: self._safe_view_student(student["id"])
-        )
-        view_btn.pack(side="left", padx=(0, 2))
-        
-        edit_btn = ttk.Button(
-            buttons_frame,
-            text="✏️ Éditer",
-            width=8,
-            command=lambda: self._safe_edit_student(student["id"])
-        )
-        edit_btn.pack(side="left", padx=(0, 2))
-        
-        delete_btn = ttk.Button(
-            buttons_frame,
-            text="🗑️ Suppr.",
-            width=9,
-            command=lambda: self._safe_delete_student(student["id"])
-        )
-        delete_btn.pack(side="left")
-        
-        return main_frame
+    def _context_toggle_selection(self, item):
+        """Toggle sélection depuis le menu contextuel"""
+        try:
+            student_id = self.treeview.set(item, "student_id")
+            if student_id:
+                self._safe_toggle_student_selection(student_id)
+        except:
+            pass
+    
+    def _context_delete_student(self, item):
+        """Supprimer un étudiant depuis le menu contextuel"""
+        try:
+            student_id = self.treeview.set(item, "student_id")
+            if student_id:
+                self._safe_delete_student(student_id)
+        except:
+            pass
     
     def refresh_view(self):
         """Rafraîchit complètement la vue"""
@@ -708,13 +669,6 @@ class StudentView:
                 self.controller.view_student(student_id)
             except Exception as e:
                 messagebox.showinfo("👁️ Voir Élève", f"Affichage des détails pour l'élève ID: {student_id}\n\n(Fonctionnalité à développer)")
-    
-    def _safe_edit_student(self, student_id):
-        if self.controller:
-            try:
-                self.controller.edit_student(student_id)
-            except Exception as e:
-                messagebox.showinfo("✏️ Éditer Élève", f"Édition de l'élève ID: {student_id}\n\n(Fonctionnalité à développer)")
     
     def _safe_delete_student(self, student_id):
         if self.controller:
