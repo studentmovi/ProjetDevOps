@@ -7,3 +7,13 @@ Version 0.1.0
 - Ajout des page pour voir les evenements et eleves
 - mis en place du filtre au niveaux des eleves
 - Structure du projet revues
+
+Version 0.2.0
+-Modification du filtre
+-Mise en place du calcule de prix par evenements
+-Autre feature
+
+Version 0.3.0
+-Update de l'UI
+-Modification de la vu Home
+-Mise en place de la logique d'importation d'excel

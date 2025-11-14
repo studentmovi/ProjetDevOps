@@ -1,441 +1,541 @@
 import tkinter as tk
 from tkinter import ttk
-from datetime import datetime
-from data.sample_data import get_current_month_events, get_current_week_events, get_upcoming_trips
-from component.Button import ActionButton, NavButton
-from component.Cards import Card, StatCard
+import os
+import sys
+import calendar
+from datetime import datetime, date, timedelta
+
+# Ajout du chemin pour les imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class HomeView:
-    def __init__(self, parent, styles):
-        self.parent = parent
+    """Vue d'accueil de l'application"""
+    
+    def __init__(self, root, styles):
+        self.root = root
         self.styles = styles
-        self.frame = ttk.Frame(parent)
+        self.frame = None
         
+        # Données des événements avec dates
+        self.events_data = {
+            "2024-09-15": {"name": "Sortie Théâtre", "classes": ["3A", "3B"], "status": "passé"},
+            "2024-09-22": {"name": "Concert", "classes": ["5A", "5B", "5C"], "status": "passé"},
+            "2024-10-10": {"name": "Visite Musée", "classes": ["4A", "4B"], "status": "passé"},
+            "2024-11-18": {"name": "Sortie Théâtre", "classes": ["6A", "6B"], "status": "passé"},
+            "2024-12-05": {"name": "Concert", "classes": ["2A", "2B"], "status": "aujourd'hui" if datetime.now().strftime("%Y-%m-%d") == "2024-12-05" else "à venir"},
+            "2024-12-20": {"name": "Concert de Noël", "classes": ["1A", "1B", "2A"], "status": "à venir"},
+            "2025-01-15": {"name": "Voyage Paris", "classes": ["6A", "6B", "6C"], "status": "à venir"},
+            "2025-02-12": {"name": "Visite Musée", "classes": ["3A", "3B", "3C"], "status": "à venir"},
+            "2025-03-08": {"name": "Sortie Théâtre", "classes": ["4A", "4B"], "status": "à venir"},
+            "2025-03-25": {"name": "Concert", "classes": ["5A", "5B"], "status": "à venir"},
+            "2025-04-22": {"name": "Voyage Paris", "classes": ["5A", "5B", "5C"], "status": "à venir"},
+            "2025-05-10": {"name": "Visite Musée", "classes": ["1A", "1B"], "status": "à venir"},
+            "2025-05-28": {"name": "Concert", "classes": ["6A", "6B"], "status": "à venir"},
+            "2025-06-15": {"name": "Sortie Théâtre", "classes": ["2A", "2B", "2C"], "status": "à venir"}
+        }
+    
     def create_widgets(self):
-        """Crée l'interface de la page d'accueil avec composants"""
-        # Titre principal
-        self.create_title_section()
+        """Crée l'interface d'accueil avec calendrier et événements"""
+        if self.frame:
+            self.frame.destroy()
         
-        # Section des statistiques rapides
-        self.create_quick_stats_section()
+        self.frame = ttk.Frame(self.root)
         
-        # Section principale avec 3 colonnes
-        main_container = tk.Frame(self.frame, bg=self.styles.colors['background'])
-        main_container.pack(fill="both", expand=True, padx=20, pady=10)
+        self._create_welcome_section()
+        self._create_stats_section()
         
-        # Créer les 3 sections en colonnes
-        self.create_month_section(main_container)
-        self.create_week_section(main_container)
-        self.create_trips_section(main_container)
+        # Nouveau layout avec calendrier et événements côte à côte
+        self._create_events_and_calendar_section()
         
-        # Section des actions rapides
-        self.create_quick_actions_section()
-        
-        return self.frame
+        self._create_quick_actions_section()
     
-    def create_title_section(self):
-        """Titre avec styles"""
-        title_frame_config = self.styles.get_title_frame_config('primary')
-        title_frame = tk.Frame(self.frame, **title_frame_config)
-        title_frame.pack(fill="x", padx=0, pady=0)
-        title_frame.pack_propagate(False)
-        
-        title_container = tk.Frame(title_frame, bg=title_frame_config['bg'])
-        title_container.pack(fill="both", expand=True, padx=20, pady=15)
+    def _create_welcome_section(self):
+        """Crée la section de bienvenue"""
+        welcome_frame = self.styles.create_header_frame(self.frame, padding="20")
+        welcome_frame.pack(fill="x", pady=(0, 15))
         
         # Titre principal
-        title_label_config = self.styles.get_title_label_config('primary')
-        title = tk.Label(title_container, 
-                        text="📊 Tableau de Bord", 
-                        **title_label_config)
-        title.pack()
+        title_label = ttk.Label(
+            welcome_frame,
+            text="🎓 Bienvenue dans l'application de Gestion Scolaire",
+            style="Header.TLabel"
+        )
+        title_label.pack()
         
-        # Sous-titre avec date
-        subtitle_label_config = self.styles.get_subtitle_label_config('primary')
-        current_date = datetime.now().strftime("%A %d %B %Y")
-        subtitle = tk.Label(title_container, 
-                           text=f"Vue d'ensemble • {current_date}", 
-                           **subtitle_label_config)
-        subtitle.pack()
+        # Sous-titre avec date du jour
+        today = datetime.now().strftime("%A %d %B %Y")
+        subtitle_label = ttk.Label(
+            welcome_frame,
+            text=f"📅 {today} • Gérez facilement vos élèves et événements scolaires",
+            style="Header.TLabel"
+        )
+        subtitle_label.pack(pady=(8, 0))
     
-    def create_quick_stats_section(self):
-        """Section des statistiques rapides avec cartes"""
-        stats_frame = tk.Frame(self.frame, bg=self.styles.colors['background'])
-        stats_frame.pack(fill="x", padx=20, pady=15)
+    def _create_stats_section(self):
+        """Crée la section des statistiques"""
+        stats_frame = ttk.Frame(self.frame)
+        stats_frame.pack(fill="x", pady=(0, 15))
         
         # Titre de section
-        section_title = tk.Label(stats_frame,
-                               text="📈 Aperçu Rapide",
-                               font=("Helvetica", 12, "bold"),
-                               fg=self.styles.colors['text_primary'],
-                               bg=self.styles.colors['background'])
-        section_title.pack(anchor="w", pady=(0, 10))
+        section_title = ttk.Label(
+            stats_frame,
+            text="📊 Statistiques Rapides",
+            style="Heading.TLabel"
+        )
+        section_title.pack(anchor="w", pady=(0, 8))
         
-        # Container pour les cartes statistiques
-        cards_container = tk.Frame(stats_frame, bg=self.styles.colors['background'])
+        # Container pour les cartes de stats
+        cards_container = ttk.Frame(stats_frame)
         cards_container.pack(fill="x")
         
-        # Statistiques
-        month_events = get_current_month_events()
-        week_events = get_current_week_events()
-        upcoming_trips = get_upcoming_trips()
+        # Calculer les stats dynamiques
+        total_events = len(self.events_data)
+        upcoming_events = len([e for e in self.events_data.values() if e["status"] == "à venir"])
+        total_classes = len(set(classe for event in self.events_data.values() for classe in event["classes"]))
         
-        # Carte événements du mois
-        month_card = StatCard(
-            cards_container,
-            "Événements ce mois",
-            len(month_events),
-            f"Sur {self.get_current_month_name()}",
-            "📅",
-            "success"
-        )
-        month_card.create().pack(side="left", fill="x", expand=True, padx=5)
-        
-        # Carte événements cette semaine
-        week_card = StatCard(
-            cards_container,
-            "Cette semaine",
-            len(week_events),
-            "Événements urgents",
-            "⚡",
-            "warning" if len(week_events) > 0 else "info"
-        )
-        week_card.create().pack(side="left", fill="x", expand=True, padx=5)
-        
-        # Carte voyages prévus
-        trips_card = StatCard(
-            cards_container,
-            "Voyages prévus",
-            len(upcoming_trips),
-            "À organiser",
-            "✈️",
-            "info"
-        )
-        trips_card.create().pack(side="left", fill="x", expand=True, padx=5)
-        
-        # Carte revenus estimés
-        total_revenue = sum(event.get('prix', 0) * event.get('participants', 0) 
-                          for event in month_events + upcoming_trips)
-        revenue_card = StatCard(
-            cards_container,
-            "Revenus estimés",
-            f"{total_revenue:.0f}€",
-            "Ce mois + voyages",
-            "💰",
-            "success"
-        )
-        revenue_card.create().pack(side="left", fill="x", expand=True, padx=5)
+        # Cartes de statistiques
+        self._create_stat_card(cards_container, "👥 Élèves", "48", "Total inscrits", 0)
+        self._create_stat_card(cards_container, "📅 Événements", str(upcoming_events), "À venir", 1)
+        self._create_stat_card(cards_container, "🏫 Classes", str(total_classes), "Classes concernées", 2)
+        self._create_stat_card(cards_container, "📈 Total", str(total_events), "Événements planifiés", 3)
     
-    def create_month_section(self, parent):
-        """Section du mois avec composant Card"""
-        # Créer la carte
-        month_card = Card(parent, f"🗓️ {self.get_current_month_name()}", "success", padding=15)
-        card_frame = month_card.create()
-        card_frame.pack(side="left", fill="both", expand=True, padx=5)
+    def _create_stat_card(self, parent, icon_text, number, description, column):
+        """Crée une carte de statistique"""
+        card_frame = self.styles.create_card_frame(parent, padding="12")
+        card_frame.grid(row=0, column=column, sticky="nsew", padx=4)
         
-        body = month_card.get_body()
+        # Configuration des colonnes pour répartir l'espace
+        parent.grid_columnconfigure(column, weight=1)
         
-        events = get_current_month_events()
+        # Icône et nombre
+        header_frame = ttk.Frame(card_frame)
+        header_frame.pack(fill="x")
         
-        if events:
-            for i, event in enumerate(events):
-                # Container pour chaque événement
-                event_container = tk.Frame(body, bg=self.styles.colors['white'], 
-                                         relief="solid", bd=1)
-                event_container.pack(fill="x", pady=3)
+        icon_label = ttk.Label(
+            header_frame,
+            text=icon_text,
+            font=("Arial", 12, "bold"),
+            style="Heading.TLabel"
+        )
+        icon_label.pack(side="left")
+        
+        number_label = ttk.Label(
+            header_frame,
+            text=number,
+            font=("Arial", 18, "bold"),
+            style="Title.TLabel"
+        )
+        number_label.pack(side="right")
+        
+        # Description
+        desc_label = ttk.Label(
+            card_frame,
+            text=description,
+            style="Small.TLabel"
+        )
+        desc_label.pack(anchor="w", pady=(4, 0))
+    
+    def _create_events_and_calendar_section(self):
+        """Crée la section avec événements du mois et calendrier côte à côte"""
+        container = ttk.Frame(self.frame)
+        container.pack(fill="both", expand=True, pady=(0, 15))
+        
+        # ========== ÉVÉNEMENTS DU MOIS (côté gauche) ==========
+        events_frame = ttk.LabelFrame(
+            container,
+            text="📅 Événements de ce mois",
+            style="TLabelframe",
+            padding="10"
+        )
+        events_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        
+        self._create_monthly_events(events_frame)
+        
+        # ========== CALENDRIER (côté droit) ==========
+        calendar_frame = ttk.LabelFrame(
+            container,
+            text="🗓️ Calendrier des événements",
+            style="TLabelframe",
+            padding="10"
+        )
+        calendar_frame.pack(side="right", fill="both", expand=True, padx=(8, 0))
+        
+        self._create_calendar_widget(calendar_frame)
+    
+    def _create_monthly_events(self, parent):
+        """Crée la liste des événements du mois courant"""
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+        
+        # Filtrer les événements du mois courant
+        monthly_events = []
+        for date_str, event in self.events_data.items():
+            event_date = datetime.strptime(date_str, "%Y-%m-%d")
+            if event_date.month == current_month and event_date.year == current_year:
+                monthly_events.append((date_str, event))
+        
+        # Trier par date
+        monthly_events.sort(key=lambda x: x[0])
+        
+        if not monthly_events:
+            no_events_label = ttk.Label(
+                parent,
+                text="📭 Aucun événement prévu ce mois-ci",
+                style="Small.TLabel"
+            )
+            no_events_label.pack(pady=20)
+        else:
+            # Liste des événements avec scrollbar
+            list_frame = ttk.Frame(parent)
+            list_frame.pack(fill="both", expand=True)
+            
+            # Canvas avec scrollbar pour les événements
+            canvas = tk.Canvas(list_frame, height=200, bg=self.styles.colors['white'])
+            scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
+            scrollable_frame = ttk.Frame(canvas)
+            
+            scrollable_frame.bind(
+                "<Configure>",
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            
+            # Ajouter les événements
+            for date_str, event in monthly_events:
+                event_date = datetime.strptime(date_str, "%Y-%m-%d")
                 
-                # Header de l'événement
-                event_header = tk.Frame(event_container, 
-                                      bg=self.styles.colors['success'] if event["statut"] == "effectué" 
-                                      else self.styles.colors['warning'])
-                event_header.pack(fill="x")
+                # Frame pour chaque événement
+                event_frame = self.styles.create_card_frame(scrollable_frame, padding="8")
+                event_frame.pack(fill="x", pady=2)
                 
                 # Date et statut
-                date_str = event["date"].strftime("%d/%m")
-                status_icon = "✅" if event["statut"] == "effectué" else "📋"
+                date_formatted = event_date.strftime("%d/%m")
+                status_emoji = {"passé": "✅", "aujourd'hui": "🔥", "à venir": "⏳"}
+                status_color = {"passé": "gray", "aujourd'hui": "red", "à venir": "blue"}
                 
-                date_label = tk.Label(event_header,
-                                    text=f"{status_icon} {date_str}",
-                                    font=("Helvetica", 8, "bold"),
-                                    fg="white",
-                                    bg=event_header['bg'],
-                                    padx=8, pady=4)
-                date_label.pack(side="left")
+                header_frame = ttk.Frame(event_frame)
+                header_frame.pack(fill="x")
                 
-                # Prix
-                price_label = tk.Label(event_header,
-                                     text=f"{event['prix']}€",
-                                     font=("Helvetica", 8, "bold"),
-                                     fg="white",
-                                     bg=event_header['bg'],
-                                     padx=8, pady=4)
-                price_label.pack(side="right")
+                date_status_label = ttk.Label(
+                    header_frame,
+                    text=f"{status_emoji[event['status']]} {date_formatted}",
+                    font=("Arial", 9, "bold"),
+                    style="Small.TLabel"
+                )
+                date_status_label.pack(side="left")
                 
-                # Corps de l'événement
-                event_body = tk.Frame(event_container, bg=self.styles.colors['white'])
-                event_body.pack(fill="x", padx=10, pady=8)
-                
-                # Nom de l'événement
-                name_label = tk.Label(event_body,
-                                    text=event['nom'],
-                                    font=("Helvetica", 9, "bold"),
-                                    fg=self.styles.colors['text_primary'],
-                                    bg=self.styles.colors['white'],
-                                    wraplength=200)
-                name_label.pack(anchor="w")
-                
-                # Informations supplémentaires
-                info_label = tk.Label(event_body,
-                                    text=f"👥 {event['participants']} participants • 🎯 {event['type']}",
-                                    font=("Helvetica", 8),
-                                    fg=self.styles.colors['text_secondary'],
-                                    bg=self.styles.colors['white'])
-                info_label.pack(anchor="w")
-        else:
-            # Message si pas d'événements
-            no_events_label = tk.Label(body,
-                                     text="📭 Aucun événement ce mois-ci",
-                                     font=("Helvetica", 10, "italic"),
-                                     fg=self.styles.colors['text_secondary'],
-                                     bg=self.styles.get_card_config('success')['bg'])
-            no_events_label.pack(pady=20)
-    
-    def create_week_section(self, parent):
-        """Section de la semaine avec composant Card"""
-        week_card = Card(parent, "📅 Cette Semaine", "info", padding=15)
-        card_frame = week_card.create()
-        card_frame.pack(side="left", fill="both", expand=True, padx=5)
-        
-        body = week_card.get_body()
-        
-        events = get_current_week_events()
-        
-        if events:
-            for event in events:
-                # Événement urgent
-                urgent_container = tk.Frame(body, bg=self.styles.colors['danger'], 
-                                          relief="solid", bd=2)
-                urgent_container.pack(fill="x", pady=3)
-                
-                # Header urgent
-                urgent_header = tk.Frame(urgent_container, bg=self.styles.colors['danger'])
-                urgent_header.pack(fill="x")
-                
-                urgent_label = tk.Label(urgent_header,
-                                      text="⚡ URGENT",
-                                      font=("Helvetica", 8, "bold"),
-                                      fg="white",
-                                      bg=self.styles.colors['danger'],
-                                      padx=8, pady=2)
-                urgent_label.pack(side="left")
-                
-                day_label = tk.Label(urgent_header,
-                                   text=event["date"].strftime("%A %d"),
-                                   font=("Helvetica", 8, "bold"),
-                                   fg="white",
-                                   bg=self.styles.colors['danger'],
-                                   padx=8, pady=2)
-                day_label.pack(side="right")
-                
-                # Corps urgent
-                urgent_body = tk.Frame(urgent_container, bg=self.styles.colors['white'])
-                urgent_body.pack(fill="x", padx=8, pady=6)
-                
-                event_name = tk.Label(urgent_body,
-                                    text=event['nom'],
-                                    font=("Helvetica", 9, "bold"),
-                                    fg=self.styles.colors['text_primary'],
-                                    bg=self.styles.colors['white'],
-                                    wraplength=180)
-                event_name.pack(anchor="w")
-                
-                event_info = tk.Label(urgent_body,
-                                    text=f"💰 {event['prix']}€ • 👥 {event['participants']}",
-                                    font=("Helvetica", 8),
-                                    fg=self.styles.colors['text_secondary'],
-                                    bg=self.styles.colors['white'])
-                event_info.pack(anchor="w")
-                
-                # Bouton action rapide
-                action_btn = ActionButton(urgent_body, "Voir détails", 
-                                        command=lambda e=event: self.view_event_details(e),
-                                        action_type='edit')
-                action_btn.create().pack(anchor="w", pady=2)
-        else:
-            no_urgent_label = tk.Label(body,
-                                     text="😌 Aucun événement urgent",
-                                     font=("Helvetica", 10, "italic"),
-                                     fg=self.styles.colors['text_secondary'],
-                                     bg=self.styles.get_card_config('info')['bg'])
-            no_urgent_label.pack(pady=20)
-    
-    def create_trips_section(self, parent):
-        """Section des voyages avec composant Card"""
-        trips_card = Card(parent, "✈️ Voyages Prévus", "warning", padding=15)
-        card_frame = trips_card.create()
-        card_frame.pack(side="left", fill="both", expand=True, padx=5)
-        
-        body = trips_card.get_body()
-        
-        trips = get_upcoming_trips()
-        
-        if trips:
-            for trip in trips:
-                # Container voyage
-                trip_container = tk.Frame(body, bg=self.styles.colors['white'],
-                                        relief="raised", bd=2)
-                trip_container.pack(fill="x", pady=5)
-                
-                # Header voyage
-                trip_header = tk.Frame(trip_container, bg=self.styles.colors['warning'])
-                trip_header.pack(fill="x")
-                
-                # Nom du voyage
-                trip_name = tk.Label(trip_header,
-                                   text=f"✈️ {trip['nom'][:25]}...",
-                                   font=("Helvetica", 9, "bold"),
-                                   fg="white",
-                                   bg=self.styles.colors['warning'],
-                                   padx=8, pady=5)
-                trip_name.pack(side="left")
-                
-                # Statut
-                status_text = "✅" if trip['statut'] == 'confirmé' else "⏳"
-                status_label = tk.Label(trip_header,
-                                      text=status_text,
-                                      font=("Helvetica", 10),
-                                      fg="white",
-                                      bg=self.styles.colors['warning'],
-                                      padx=8, pady=5)
+                status_label = ttk.Label(
+                    header_frame,
+                    text=event["status"].upper(),
+                    font=("Arial", 8),
+                    style="Small.TLabel"
+                )
                 status_label.pack(side="right")
                 
-                # Corps du voyage
-                trip_body = tk.Frame(trip_container, bg=self.styles.colors['white'])
-                trip_body.pack(fill="x", padx=10, pady=8)
+                # Nom de l'événement
+                event_name_label = ttk.Label(
+                    event_frame,
+                    text=f"🎭 {event['name']}",
+                    font=("Arial", 10, "bold"),
+                    style="Heading.TLabel"
+                )
+                event_name_label.pack(anchor="w")
                 
-                # Dates
-                date_range = f"{trip['date_debut'].strftime('%d/%m')} - {trip['date_fin'].strftime('%d/%m')}"
-                date_label = tk.Label(trip_body,
-                                    text=f"📅 {date_range}",
-                                    font=("Helvetica", 8, "bold"),
-                                    fg=self.styles.colors['text_primary'],
-                                    bg=self.styles.colors['white'])
-                date_label.pack(anchor="w")
-                
-                # Prix et participants
-                details_frame = tk.Frame(trip_body, bg=self.styles.colors['white'])
-                details_frame.pack(fill="x", pady=2)
-                
-                price_detail = tk.Label(details_frame,
-                                      text=f"💰 {trip['prix']}€",
-                                      font=("Helvetica", 8),
-                                      fg=self.styles.colors['text_secondary'],
-                                      bg=self.styles.colors['white'])
-                price_detail.pack(side="left")
-                
-                participants_detail = tk.Label(details_frame,
-                                             text=f"👥 {trip['participants']}",
-                                             font=("Helvetica", 8),
-                                             fg=self.styles.colors['text_secondary'],
-                                             bg=self.styles.colors['white'])
-                participants_detail.pack(side="right")
-                
-                # Boutons d'action
-                actions_frame = tk.Frame(trip_body, bg=self.styles.colors['white'])
-                actions_frame.pack(fill="x", pady=5)
-                
-                edit_btn = ActionButton(actions_frame, "Modifier", 
-                                      command=lambda t=trip: self.edit_trip(t),
-                                      action_type='edit')
-                edit_btn.create().pack(side="left", padx=2)
-                
-                if trip['statut'] != 'confirmé':
-                    confirm_btn = ActionButton(actions_frame, "Confirmer", 
-                                             command=lambda t=trip: self.confirm_trip(t),
-                                             action_type='save')
-                    confirm_btn.create().pack(side="left", padx=2)
-        else:
-            no_trips_label = tk.Label(body,
-                                    text="🏖️ Aucun voyage prévu",
-                                    font=("Helvetica", 10, "italic"),
-                                    fg=self.styles.colors['text_secondary'],
-                                    bg=self.styles.get_card_config('warning')['bg'])
-            no_trips_label.pack(pady=20)
+                # Classes concernées
+                classes_text = ", ".join(event["classes"])
+                classes_label = ttk.Label(
+                    event_frame,
+                    text=f"🏫 Classes: {classes_text}",
+                    style="Small.TLabel"
+                )
+                classes_label.pack(anchor="w")
+            
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
     
-    def create_quick_actions_section(self):
-        """Section des actions rapides"""
-        actions_frame = tk.Frame(self.frame, bg=self.styles.colors['background'])
-        actions_frame.pack(fill="x", padx=20, pady=15)
+    def _create_calendar_widget(self, parent):
+        """Crée un calendrier avec les événements marqués"""
+        # En-tête avec navigation
+        nav_frame = ttk.Frame(parent)
+        nav_frame.pack(fill="x", pady=(0, 10))
+        
+        # Date actuelle pour la navigation
+        self.current_date = datetime.now()
+        
+        # Boutons de navigation
+        prev_btn = ttk.Button(
+            nav_frame,
+            text="◀",
+            width=3,
+            command=self._prev_month
+        )
+        prev_btn.pack(side="left")
+        
+        self.month_year_label = ttk.Label(
+            nav_frame,
+            text="",
+            font=("Arial", 12, "bold"),
+            style="Heading.TLabel"
+        )
+        self.month_year_label.pack(side="left", expand=True)
+        
+        next_btn = ttk.Button(
+            nav_frame,
+            text="▶",
+            width=3,
+            command=self._next_month
+        )
+        next_btn.pack(side="right")
+        
+        # Frame pour le calendrier
+        self.calendar_frame = ttk.Frame(parent)
+        self.calendar_frame.pack(fill="both", expand=True)
+        
+        # Créer le calendrier initial
+        self._update_calendar()
+    
+    def _prev_month(self):
+        """Mois précédent"""
+        if self.current_date.month == 1:
+            self.current_date = self.current_date.replace(year=self.current_date.year-1, month=12)
+        else:
+            self.current_date = self.current_date.replace(month=self.current_date.month-1)
+        self._update_calendar()
+    
+    def _next_month(self):
+        """Mois suivant"""
+        if self.current_date.month == 12:
+            self.current_date = self.current_date.replace(year=self.current_date.year+1, month=1)
+        else:
+            self.current_date = self.current_date.replace(month=self.current_date.month+1)
+        self._update_calendar()
+    
+    def _update_calendar(self):
+        """Met à jour l'affichage du calendrier"""
+        # Nettoyer le frame du calendrier
+        for widget in self.calendar_frame.winfo_children():
+            widget.destroy()
+        
+        # Mettre à jour le titre
+        month_names = [
+            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+        ]
+        self.month_year_label.config(
+            text=f"{month_names[self.current_date.month-1]} {self.current_date.year}"
+        )
+        
+        # En-têtes des jours
+        days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        for i, day in enumerate(days):
+            day_label = ttk.Label(
+                self.calendar_frame,
+                text=day,
+                font=("Arial", 9, "bold"),
+                style="Small.TLabel"
+            )
+            day_label.grid(row=0, column=i, padx=1, pady=1, sticky="nsew")
+        
+        # Configuration des colonnes
+        for i in range(7):
+            self.calendar_frame.grid_columnconfigure(i, weight=1)
+        
+        # Obtenir le calendrier du mois
+        cal = calendar.monthcalendar(self.current_date.year, self.current_date.month)
+        
+        # Créer les cases du calendrier
+        for week_num, week in enumerate(cal, start=1):
+            for day_num, day in enumerate(week):
+                if day == 0:
+                    # Jour vide
+                    empty_frame = ttk.Frame(self.calendar_frame)
+                    empty_frame.grid(row=week_num, column=day_num, padx=1, pady=1, sticky="nsew")
+                else:
+                    # Vérifier s'il y a un événement ce jour
+                    date_str = f"{self.current_date.year:04d}-{self.current_date.month:02d}-{day:02d}"
+                    has_event = date_str in self.events_data
+                    
+                    # Couleur selon le statut
+                    bg_color = self.styles.colors['white']
+                    if has_event:
+                        event_status = self.events_data[date_str]["status"]
+                        if event_status == "passé":
+                            bg_color = self.styles.colors['light_gray']
+                        elif event_status == "aujourd'hui":
+                            bg_color = self.styles.colors['warning']
+                        else:  # à venir
+                            bg_color = self.styles.colors['light_blue']
+                    
+                    # Créer la case du jour
+                    day_frame = tk.Frame(
+                        self.calendar_frame,
+                        bg=bg_color,
+                        relief="solid",
+                        borderwidth=1,
+                        width=30,
+                        height=30
+                    )
+                    day_frame.grid(row=week_num, column=day_num, padx=1, pady=1, sticky="nsew")
+                    day_frame.grid_propagate(False)
+                    
+                    # Numéro du jour
+                    day_label = tk.Label(
+                        day_frame,
+                        text=str(day),
+                        bg=bg_color,
+                        font=("Arial", 9, "bold" if has_event else "normal"),
+                        fg=self.styles.colors['dark_blue'] if has_event else self.styles.colors['text_gray']
+                    )
+                    day_label.pack(expand=True)
+                    
+                    # Tooltip pour les événements
+                    if has_event:
+                        event = self.events_data[date_str]
+                        tooltip_text = f"{event['name']}\nClasses: {', '.join(event['classes'])}"
+                        self._create_tooltip(day_frame, tooltip_text)
+        
+        # Configuration des lignes
+        for i in range(len(cal) + 1):
+            self.calendar_frame.grid_rowconfigure(i, weight=1)
+    
+    def _create_tooltip(self, widget, text):
+        """Crée un tooltip pour un widget"""
+        def on_enter(event):
+            tooltip = tk.Toplevel()
+            tooltip.wm_overrideredirect(True)
+            tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")
+            
+            label = tk.Label(
+                tooltip,
+                text=text,
+                background=self.styles.colors['dark_blue'],
+                foreground=self.styles.colors['white'],
+                font=("Arial", 8),
+                relief="solid",
+                borderwidth=1,
+                padx=5,
+                pady=3
+            )
+            label.pack()
+            
+            widget.tooltip = tooltip
+        
+        def on_leave(event):
+            if hasattr(widget, 'tooltip'):
+                widget.tooltip.destroy()
+                del widget.tooltip
+        
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
+    
+    def _create_quick_actions_section(self):
+        """Crée la section des actions rapides"""
+        actions_frame = ttk.Frame(self.frame)
+        actions_frame.pack(fill="x", pady=(0, 10))
         
         # Titre de section
-        section_title = tk.Label(actions_frame,
-                               text="🚀 Actions Rapides",
-                               font=("Helvetica", 12, "bold"),
-                               fg=self.styles.colors['text_primary'],
-                               bg=self.styles.colors['background'])
-        section_title.pack(anchor="w", pady=(0, 10))
+        section_title = ttk.Label(
+            actions_frame,
+            text="⚡ Actions Rapides",
+            style="Heading.TLabel"
+        )
+        section_title.pack(anchor="w", pady=(0, 8))
         
         # Container pour les boutons
-        buttons_container = tk.Frame(actions_frame, bg=self.styles.colors['background'])
+        buttons_container = ttk.Frame(actions_frame)
         buttons_container.pack(fill="x")
         
         # Boutons d'actions rapides
-        ActionButton(buttons_container, "Nouvel Événement", 
-                    command=self.new_event, action_type='add').create().pack(side="left", padx=5)
+        btn_students = ttk.Button(
+            buttons_container,
+            text="👥 Gérer les Élèves",
+            style="Primary.TButton",
+            command=self._open_students_view
+        )
+        btn_students.pack(side="left", padx=(0, 8))
         
-        ActionButton(buttons_container, "Nouveau Voyage", 
-                    command=self.new_trip, action_type='add').create().pack(side="left", padx=5)
+        btn_import = ttk.Button(
+            buttons_container,
+            text="📊 Importer Excel",
+            style="Success.TButton",
+            command=self._import_excel
+        )
+        btn_import.pack(side="left", padx=(0, 8))
         
-        ActionButton(buttons_container, "Gérer Élèves", 
-                    command=self.manage_students, action_type='edit').create().pack(side="left", padx=5)
+        btn_events = ttk.Button(
+            buttons_container,
+            text="📅 Nouveau Événement",
+            style="Warning.TButton",
+            command=self._create_event
+        )
+        btn_events.pack(side="left", padx=(0, 8))
         
-        ActionButton(buttons_container, "Exporter Rapport", 
-                    command=self.export_report, action_type='export').create().pack(side="left", padx=5)
+        btn_export = ttk.Button(
+            buttons_container,
+            text="📤 Exporter Données",
+            style="Secondary.TButton",
+            command=self._export_data
+        )
+        btn_export.pack(side="left")
         
-        ActionButton(buttons_container, "Importer Données", 
-                    command=self.import_data, action_type='import').create().pack(side="left", padx=5)
+        # Légende du calendrier
+        legend_frame = ttk.Frame(buttons_container)
+        legend_frame.pack(side="right")
         
-        # Statistiques à droite
-        stats_info = tk.Label(buttons_container,
-                            text=f"Dernière mise à jour: {datetime.now().strftime('%H:%M')}",
-                            font=("Helvetica", 8),
-                            fg=self.styles.colors['text_secondary'],
-                            bg=self.styles.colors['background'])
-        stats_info.pack(side="right")
+        legend_label = ttk.Label(
+            legend_frame,
+            text="🔍 Légende: ",
+            style="Small.TLabel"
+        )
+        legend_label.pack(side="left")
+        
+        legend_items = [
+            ("⬜ Passé", self.styles.colors['light_gray']),
+            ("🟦 À venir", self.styles.colors['light_blue']),
+            ("🟨 Aujourd'hui", self.styles.colors['warning'])
+        ]
+        
+        for text, color in legend_items:
+            legend_item = tk.Label(
+                legend_frame,
+                text=text,
+                bg=color,
+                font=("Arial", 8),
+                padx=4,
+                pady=2,
+                relief="solid",
+                borderwidth=1
+            )
+            legend_item.pack(side="left", padx=2)
     
-    # Méthodes des callbacks
-    def view_event_details(self, event):
-        tk.messagebox.showinfo("Détails", f"Événement: {event['nom']}\nDate: {event['date'].strftime('%d/%m/%Y')}")
+    # ========== CALLBACKS ==========
+    def _open_students_view(self):
+        """Ouvre la vue des élèves"""
+        print("🎯 Ouverture de la vue élèves...")
     
-    def edit_trip(self, trip):
-        tk.messagebox.showinfo("Modifier", f"Modification du voyage: {trip['nom']}")
+    def _import_excel(self):
+        """Lance l'import Excel"""
+        from tkinter import messagebox
+        messagebox.showinfo("📊 Import Excel", "Fonctionnalité d'import Excel\n(À développer)")
     
-    def confirm_trip(self, trip):
-        tk.messagebox.showinfo("Confirmer", f"Voyage '{trip['nom']}' confirmé!")
+    def _create_event(self):
+        """Crée un nouvel événement"""
+        from tkinter import messagebox
+        messagebox.showinfo("📅 Nouvel Événement", "Création d'événement\n(À développer)")
     
-    def new_event(self):
-        tk.messagebox.showinfo("Nouveau", "Création d'un nouvel événement")
-    
-    def new_trip(self):
-        tk.messagebox.showinfo("Nouveau", "Création d'un nouveau voyage")
-    
-    def manage_students(self):
-        tk.messagebox.showinfo("Gestion", "Redirection vers la gestion des élèves")
-    
-    def export_report(self):
-        tk.messagebox.showinfo("Export", "Export du rapport en cours...")
-    
-    def import_data(self):
-        tk.messagebox.showinfo("Import", "Import de données en cours...")
-    
-    def get_current_month_name(self):
-        """Retourne le nom du mois en cours"""
-        months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-                 "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
-        return f"{months[datetime.now().month - 1]} {datetime.now().year}"
+    def _export_data(self):
+        """Exporte les données"""
+        from tkinter import messagebox
+        messagebox.showinfo("📤 Export", "Export des données\n(À développer)")
     
     def show(self):
-        self.frame.pack(fill="both", expand=True)
-        
+        """Affiche la vue"""
+        if self.frame:
+            self.frame.pack(fill="both", expand=True, padx=8, pady=8)
+    
     def hide(self):
-        self.frame.pack_forget()
+        """Cache la vue"""
+        if self.frame:
+            self.frame.pack_forget()
