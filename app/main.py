@@ -1,161 +1,181 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from utils.logger import log_info, log_warning, log_error
+from tkinter import ttk, messagebox
+import sys
+import os
+
+# Ajout du chemin pour les imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from utils.appStyles import AppStyles
 from views.home_view import HomeView
-from views.student_view import StudentsView
+from views.student_view import StudentView
 
-class CulturalEventManager:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Gestion Sorties Culturelles - Collège Notre-Dame")
-        self.root.geometry("900x700")
+class MainApplication:
+    def __init__(self):
+        self.root = tk.Tk()
         
-        # Initialiser les styles
+        # ========== INITIALISATION DES STYLES ==========
         self.styles = AppStyles()
-        self.root.configure(bg=self.styles.colors['background'])
+        self.ttk_style = self.styles.configure_ttk_style(self.root)
+        self.styles.configure_window(self.root, "🎓 CND - Gestion Événements")
         
-        # Configurer les styles TTK
-        self.styles.setup_ttk_styles()
+        # Configuration de la fenêtre
+        self.root.geometry("1400x900")
+        self.root.minsize(1200, 700)
+        self.root.state('zoomed')  # Maximisé par défaut sur Windows
         
-        # Navigation
-        self.create_navigation()
-        
-        # Container principal pour les vues
-        self.main_container = ttk.Frame(root)
-        self.main_container.pack(fill="both", expand=True)
-        
-        # Initialisation des vues
-        self.views = {}
+        # Variables
         self.current_view = None
+        self.views = {}
         
-        # Créer les vues en passant les styles
-        self.views['home'] = HomeView(self.main_container, self.styles)
-        self.views['home'].create_widgets()
+        self.setup_ui()
+        self.show_home()
+    
+    def setup_ui(self):
+        """Configure l'interface utilisateur avec le nouveau design"""
+        # ========== BARRE DE NAVIGATION SUPÉRIEURE ==========
+        nav_frame = self.styles.create_header_frame(self.root, padding="10")
+        nav_frame.pack(fill="x", side="top")
         
-        self.views['students'] = StudentsView(self.main_container, self.styles)
-        self.views['students'].create_widgets()
-        
-        # Afficher la page d'accueil par défaut
-        self.show_view('home')
-        
-        log_info("Application Cultural Event Manager initialisée")
-
-    def create_navigation(self):
-        """Crée la barre de navigation avec styles"""
-        # Configuration de la navbar
-        navbar_config = self.styles.get_navbar_config()
-        
-        nav_frame = tk.Frame(self.root, **navbar_config)
-        nav_frame.pack(fill="x", padx=0, pady=0)
-        nav_frame.pack_propagate(False)
-        
-        # Container interne avec padding
-        nav_container = tk.Frame(nav_frame, bg=navbar_config['bg'])
-        nav_container.pack(fill="both", expand=True, padx=15, pady=10)
-        
-        # Logo/Titre à gauche
-        title_label = tk.Label(nav_container, 
-                              text="🎭 Cultural Manager", 
-                              font=("Helvetica", 14, "bold"),
-                              fg=self.styles.colors['white'],
-                              bg=navbar_config['bg'])
+        # Logo/Titre
+        title_label = ttk.Label(
+            nav_frame,
+            text="🎓 Gestion Scolaire",
+            style="Header.TLabel"
+        )
         title_label.pack(side="left")
         
-        # Sous-titre
-        subtitle_label = tk.Label(nav_container, 
-                                 text="Collège Notre-Dame", 
-                                 font=("Helvetica", 8),
-                                 fg=self.styles.colors['text_light'],
-                                 bg=navbar_config['bg'])
-        subtitle_label.pack(side="left", padx=(10, 0))
+        # Menu de navigation
+        nav_buttons_frame = ttk.Frame(nav_frame, style="Header.TFrame")
+        nav_buttons_frame.pack(side="right")
         
-        # Boutons de navigation à droite
-        nav_buttons = ttk.Frame(nav_container)
-        nav_buttons.pack(side="right")
+        # Boutons de navigation avec nouveau style
+        home_btn = ttk.Button(
+            nav_buttons_frame,
+            text="🏠 Accueil",
+            command=self.show_home,
+            style="Secondary.TButton"
+        )
+        home_btn.pack(side="left", padx=(0, 8))
         
-        # Bouton Accueil
-        home_btn = tk.Button(nav_buttons, 
-                            text="🏠 Accueil",
-                            command=lambda: self.show_view('home'),
-                            bg=self.styles.colors['primary'],
-                            fg='white',
-                            font=("Helvetica", 9, "bold"),
-                            relief='flat',
-                            padx=12,
-                            pady=6,
-                            cursor='hand2')
-        home_btn.pack(side="left", padx=(0, 5))
+        students_btn = ttk.Button(
+            nav_buttons_frame,
+            text="👥 Élèves",
+            command=self.show_students,
+            style="Secondary.TButton"
+        )
+        students_btn.pack(side="left", padx=(0, 8))
         
-        # Bouton Élèves
-        students_btn = tk.Button(nav_buttons, 
-                                text="👥 Élèves",
-                                command=lambda: self.show_view('students'),
-                                bg=self.styles.colors['primary'],
-                                fg='white',
-                                font=("Helvetica", 9, "bold"),
-                                relief='flat',
-                                padx=12,
-                                pady=6,
-                                cursor='hand2')
-        students_btn.pack(side="left", padx=(0, 5))
+        events_btn = ttk.Button(
+            nav_buttons_frame,
+            text="📅 Événements",
+            command=self.show_events,
+            style="Secondary.TButton"
+        )
+        events_btn.pack(side="left", padx=(0, 8))
         
-        # Bouton Événements
-        events_btn = tk.Button(nav_buttons, 
-                              text="📅 Événements",
-                              command=self.show_events_view,
-                              bg=self.styles.colors['primary'],
-                              fg='white',
-                              font=("Helvetica", 9, "bold"),
-                              relief='flat',
-                              padx=12,
-                              pady=6,
-                              cursor='hand2')
-        events_btn.pack(side="left", padx=(0, 5))
+        settings_btn = ttk.Button(
+            nav_buttons_frame,
+            text="⚙️ Paramètres",
+            command=self.show_settings,
+            style="Light.TButton"
+        )
+        settings_btn.pack(side="left")
         
-        # Bouton Excel
-        excel_btn = tk.Button(nav_buttons, 
-                             text="📊 Excel",
-                             command=self.load_excel,
-                             bg=self.styles.colors['success'],
-                             fg='white',
-                             font=("Helvetica", 9, "bold"),
-                             relief='flat',
-                             padx=12,
-                             pady=6,
-                             cursor='hand2')
-        excel_btn.pack(side="left")
-
-    def show_view(self, view_name):
-        """Affiche une vue spécifique et cache les autres"""
-        # Cacher la vue actuelle
-        if self.current_view and self.current_view in self.views:
-            self.views[self.current_view].hide()
+        # ========== ZONE DE CONTENU PRINCIPAL ==========
+        self.content_frame = ttk.Frame(self.root)
+        self.content_frame.pack(fill="both", expand=True, padx=5, pady=(5, 0))
         
-        # Afficher la nouvelle vue
-        if view_name in self.views:
-            self.views[view_name].show()
-            self.current_view = view_name
-            log_info(f"Vue '{view_name}' affichée")
-        else:
-            log_warning(f"Vue '{view_name}' non trouvée")
-
-    def show_events_view(self):
-        """Affiche la vue des événements (à développer)"""
-        messagebox.showinfo("Info", "Vue des événements à développer")
-
-    def load_excel(self):
-        """Lance l'import Excel depuis la navigation"""
-        if 'students' in self.views:
-            # Basculer vers la vue élèves et lancer l'import
-            self.show_view('students')
-            # Délai pour s'assurer que la vue est affichée
-            self.root.after(100, lambda: self.views['students']._on_import_excel())
-        else:
-            messagebox.showwarning("Attention", "Vue des élèves non disponible")
-
+        # ========== BARRE DE STATUT INFÉRIEURE ==========
+        status_frame = self.styles.create_card_frame(self.root, padding="8")
+        status_frame.pack(fill="x", side="bottom")
+        
+        self.status_label = ttk.Label(
+            status_frame,
+            text="🚀 Application démarrée - Prêt à utiliser",
+            style="Small.TLabel"
+        )
+        self.status_label.pack(side="left")
+        
+        version_label = ttk.Label(
+            status_frame,
+            text="v0.3.0",
+            style="Small.TLabel"
+        )
+        version_label.pack(side="right")
+    
+    def switch_view(self, new_view_name):
+        """Bascule entre les vues avec animation"""
+        try:
+            # Masquer la vue actuelle
+            if self.current_view:
+                self.current_view.hide()
+            
+            # Créer la nouvelle vue si nécessaire
+            if new_view_name not in self.views:
+                if new_view_name == "home":
+                    self.views[new_view_name] = HomeView(self.content_frame, self.styles)
+                elif new_view_name == "students":
+                    self.views[new_view_name] = StudentView(self.content_frame, self.styles)
+                # Ajouter d'autres vues ici
+                
+                # Créer les widgets de la vue
+                if hasattr(self.views[new_view_name], 'create_widgets'):
+                    self.views[new_view_name].create_widgets()
+            
+            # Afficher la nouvelle vue
+            self.current_view = self.views[new_view_name]
+            self.current_view.show()
+            
+            # Mettre à jour le statut
+            view_names = {
+                "home": "🏠 Accueil",
+                "students": "👥 Gestion des Élèves",
+                "events": "📅 Gestion des Événements"
+            }
+            self.status_label.config(text=f"📍 Page Active: {view_names.get(new_view_name, new_view_name)}")
+            
+        except Exception as e:
+            messagebox.showerror("❌ Erreur", f"Erreur lors du changement de vue: {e}")
+            print(f"Erreur switch_view: {e}")
+    
+    def show_home(self):
+        """Affiche la vue d'accueil"""
+        self.switch_view("home")
+    
+    def show_students(self):
+        """Affiche la vue des élèves"""
+        self.switch_view("students")
+    
+    def show_events(self):
+        """Affiche la vue des événements"""
+        messagebox.showinfo("📅 Événements", "Vue des événements\n(À développer)")
+    
+    def show_settings(self):
+        """Affiche la vue des paramètres"""
+        messagebox.showinfo("⚙️ Paramètres", "Vue des paramètres\n(À développer)")
+    
+    def run(self):
+        """Lance l'application"""
+        try:
+            # Message de démarrage stylé
+            print("🚀 Démarrage de l'application avec le nouveau design bleu...")
+            
+            # Centrer la fenêtre
+            self.root.update_idletasks()
+            width = self.root.winfo_width()
+            height = self.root.winfo_height()
+            x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+            y = (self.root.winfo_screenheight() // 2) - (height // 2)
+            self.root.geometry(f'{width}x{height}+{x}+{y}')
+            
+            # Démarrer la boucle principale
+            self.root.mainloop()
+            
+        except Exception as e:
+            print(f"❌ Erreur critique: {e}")
+            messagebox.showerror("Erreur critique", f"Erreur lors du démarrage:\n{e}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = CulturalEventManager(root)
-    root.mainloop()
+    app = MainApplication()
+    app.run()

@@ -1,285 +1,417 @@
-from tkinter import ttk
 import tkinter as tk
+from tkinter import ttk
 
 class AppStyles:
-    """Classe pour gérer tous les styles de l'application"""
-    
     def __init__(self):
+        # ========== PALETTE COULEURS BLEU PÂLE PROFESSIONNEL ==========
         self.colors = {
-            'primary': '#3742fa',      # Bleu vif
-            'success': '#2ed573',      # Vert
-            'info': '#1e90ff',         # Bleu clair
-            'warning': '#ffa502',      # Orange
-            'danger': '#ff4757',       # Rouge
-            'light': '#f1f2f6',        # Gris clair
-            'dark': '#2f3542',         # Gris foncé
-            'navbar': '#2c3e50',       # Bleu-gris foncé pour navbar
-            'background': '#f5f6fa',   # Fond général
-            'white': '#ffffff',
-            'text_primary': '#2c3e50',
-            'text_secondary': '#7f8c8d',
-            'text_light': '#bdc3c7'
+            # Bleus principaux
+            'primary_blue': '#4A90E2',          # Bleu principal
+            'light_blue': '#E3F2FD',            # Bleu très pâle pour fond
+            'medium_blue': '#BBDEFB',           # Bleu moyen pour éléments
+            'dark_blue': '#1976D2',             # Bleu foncé pour texte important
+            'accent_blue': '#2196F3',           # Bleu accent pour boutons
+            
+            # Blancs et gris
+            'white': '#FFFFFF',                 # Blanc pur
+            'off_white': '#FAFAFA',             # Blanc cassé
+            'light_gray': '#F5F5F5',            # Gris très clair
+            'medium_gray': '#E0E0E0',           # Gris moyen
+            'text_gray': '#424242',             # Gris pour texte
+            'border_gray': '#BDBDBD',           # Gris pour bordures
+            
+            # Couleurs d'état
+            'success': '#4CAF50',               # Vert pour succès
+            'warning': '#FF9800',               # Orange pour avertissement  
+            'error': '#F44336',                 # Rouge pour erreur
+            'info': '#2196F3',                  # Bleu pour info
+            
+            # Couleurs spéciales
+            'hover': '#E1F5FE',                 # Bleu très clair au survol
+            'selected': '#B3E5FC',              # Bleu clair pour sélection
+            'disabled': '#F5F5F5'               # Gris clair pour désactivé
+        }
+        
+        # ========== POLICES ==========
+        self.fonts = {
+            'title': ('Segoe UI', 16, 'bold'),
+            'subtitle': ('Segoe UI', 14, 'bold'),
+            'heading': ('Segoe UI', 12, 'bold'),
+            'body': ('Segoe UI', 10, 'normal'),
+            'small': ('Segoe UI', 9, 'normal'),
+            'tiny': ('Segoe UI', 8, 'normal'),
+            'button': ('Segoe UI', 9, 'bold'),
+            'code': ('Consolas', 9, 'normal')
+        }
+        
+        # ========== DIMENSIONS ==========
+        self.dimensions = {
+            'padding_large': 15,
+            'padding_medium': 10,
+            'padding_small': 5,
+            'margin_large': 20,
+            'margin_medium': 10,
+            'margin_small': 5,
+            'border_width': 1,
+            'button_height': 32,
+            'input_height': 28
         }
     
-    def setup_ttk_styles(self):
-        """Configure tous les styles TTK"""
-        style = ttk.Style()
-        style.theme_use('clam')
+    def configure_ttk_style(self, root):
+        """Configure le style TTK avec le thème bleu professionnel"""
+        style = ttk.Style(root)
         
-        # Styles pour les boutons de navigation
-        self._setup_navigation_styles(style)
+        # ========== CONFIGURATION GÉNÉRALE ==========
+        style.theme_use('clam')  # Base moderne
         
-        # Styles pour les LabelFrames
-        self._setup_labelframe_styles(style)
+        # Configuration du fond principal
+        style.configure('.',
+            background=self.colors['off_white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body'],
+            borderwidth=0,
+            relief='flat'
+        )
         
-        # Styles pour les autres composants
-        self._setup_misc_styles(style)
+        # ========== FRAMES ==========
+        style.configure('TFrame',
+            background=self.colors['off_white'],
+            borderwidth=0,
+            relief='flat'
+        )
+        
+        style.configure('Card.TFrame',
+            background=self.colors['white'],
+            borderwidth=1,
+            relief='solid'
+        )
+        
+        style.configure('Header.TFrame',
+            background=self.colors['primary_blue'],
+            borderwidth=0
+        )
+        
+        # ========== LABELS ==========
+        style.configure('TLabel',
+            background=self.colors['off_white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body']
+        )
+        
+        style.configure('Title.TLabel',
+            background=self.colors['off_white'],
+            foreground=self.colors['dark_blue'],
+            font=self.fonts['title']
+        )
+        
+        style.configure('Subtitle.TLabel',
+            background=self.colors['off_white'],
+            foreground=self.colors['primary_blue'],
+            font=self.fonts['subtitle']
+        )
+        
+        style.configure('Heading.TLabel',
+            background=self.colors['off_white'],
+            foreground=self.colors['dark_blue'],
+            font=self.fonts['heading']
+        )
+        
+        style.configure('Header.TLabel',
+            background=self.colors['primary_blue'],
+            foreground=self.colors['white'],
+            font=self.fonts['heading']
+        )
+        
+        style.configure('Small.TLabel',
+            background=self.colors['off_white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['small']
+        )
+        
+        # ========== BOUTONS ==========
+        # Bouton principal
+        style.configure('Primary.TButton',
+            background=self.colors['primary_blue'],
+            foreground=self.colors['white'],
+            font=self.fonts['button'],
+            borderwidth=0,
+            relief='flat',
+            padding=(15, 8)
+        )
+        
+        style.map('Primary.TButton',
+            background=[
+                ('active', self.colors['accent_blue']),
+                ('pressed', self.colors['dark_blue']),
+                ('disabled', self.colors['disabled'])
+            ],
+            foreground=[
+                ('disabled', self.colors['text_gray'])
+            ]
+        )
+        
+        # Bouton secondaire
+        style.configure('Secondary.TButton',
+            background=self.colors['white'],
+            foreground=self.colors['primary_blue'],
+            font=self.fonts['button'],
+            borderwidth=1,
+            relief='solid',
+            padding=(15, 8)
+        )
+        
+        style.map('Secondary.TButton',
+            background=[
+                ('active', self.colors['hover']),
+                ('pressed', self.colors['light_blue'])
+            ]
+        )
+        
+        # Bouton succès
+        style.configure('Success.TButton',
+            background=self.colors['success'],
+            foreground=self.colors['white'],
+            font=self.fonts['button'],
+            borderwidth=0,
+            relief='flat',
+            padding=(15, 8)
+        )
+        
+        # Bouton avertissement
+        style.configure('Warning.TButton',
+            background=self.colors['warning'],
+            foreground=self.colors['white'],
+            font=self.fonts['button'],
+            borderwidth=0,
+            relief='flat',
+            padding=(15, 8)
+        )
+        
+        # Bouton erreur
+        style.configure('Error.TButton',
+            background=self.colors['error'],
+            foreground=self.colors['white'],
+            font=self.fonts['button'],
+            borderwidth=0,
+            relief='flat',
+            padding=(15, 8)
+        )
+        
+        # Bouton léger
+        style.configure('Light.TButton',
+            background=self.colors['light_gray'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['button'],
+            borderwidth=0,
+            relief='flat',
+            padding=(12, 6)
+        )
+        
+        style.map('Light.TButton',
+            background=[
+                ('active', self.colors['medium_gray']),
+                ('pressed', self.colors['border_gray'])
+            ]
+        )
+        
+        # ========== ENTRÉES ==========
+        style.configure('TEntry',
+            fieldbackground=self.colors['white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body'],
+            borderwidth=1,
+            relief='solid',
+            insertcolor=self.colors['primary_blue'],
+            padding=(8, 6)
+        )
+        
+        style.map('TEntry',
+            bordercolor=[
+                ('focus', self.colors['primary_blue']),
+                ('active', self.colors['accent_blue'])
+            ],
+            fieldbackground=[
+                ('focus', self.colors['white']),
+                ('active', self.colors['white'])
+            ]
+        )
+        
+        # ========== COMBOBOX ==========
+        style.configure('TCombobox',
+            fieldbackground=self.colors['white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body'],
+            borderwidth=1,
+            relief='solid',
+            arrowcolor=self.colors['primary_blue'],
+            padding=(8, 6)
+        )
+        
+        style.map('TCombobox',
+            bordercolor=[
+                ('focus', self.colors['primary_blue']),
+                ('active', self.colors['accent_blue'])
+            ]
+        )
+        
+        # ========== LABELFRAME ==========
+        style.configure('TLabelframe',
+            background=self.colors['off_white'],
+            borderwidth=1,
+            relief='solid',
+            padding=(10, 10)
+        )
+        
+        style.configure('TLabelframe.Label',
+            background=self.colors['off_white'],
+            foreground=self.colors['primary_blue'],
+            font=self.fonts['heading']
+        )
+        
+        # Style compact pour filtres
+        style.configure('Compact.TLabelframe',
+            background=self.colors['light_blue'],
+            borderwidth=1,
+            relief='solid',
+            padding=(8, 6)
+        )
+        
+        style.configure('Compact.TLabelframe.Label',
+            background=self.colors['light_blue'],
+            foreground=self.colors['dark_blue'],
+            font=self.fonts['body']
+        )
+        
+        # ========== TREEVIEW ==========
+        style.configure('Treeview',
+            background=self.colors['white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body'],
+            borderwidth=1,
+            relief='solid',
+            rowheight=30
+        )
+        
+        style.configure('Treeview.Heading',
+            background=self.colors['primary_blue'],
+            foreground=self.colors['white'],
+            font=self.fonts['heading'],
+            borderwidth=1,
+            relief='flat'
+        )
+        
+        style.map('Treeview.Heading',
+            background=[('active', self.colors['accent_blue'])]
+        )
+        
+        style.map('Treeview',
+            background=[
+                ('selected', self.colors['selected']),
+                ('active', self.colors['hover'])
+            ],
+            foreground=[
+                ('selected', self.colors['dark_blue'])
+            ]
+        )
+        
+        # ========== SCROLLBARS ==========
+        style.configure('TScrollbar',
+            background=self.colors['light_gray'],
+            arrowcolor=self.colors['primary_blue'],
+            troughcolor=self.colors['light_gray']
+        )
+        
+        style.map('TScrollbar',
+            background=[
+                ('active', self.colors['medium_gray']),
+                ('pressed', self.colors['primary_blue'])
+            ]
+        )
+        
+        # ========== CHECKBUTTON ==========
+        style.configure('TCheckbutton',
+            background=self.colors['off_white'],
+            foreground=self.colors['text_gray'],
+            font=self.fonts['body'],
+            focuscolor=self.colors['primary_blue']
+        )
+        
+        # ========== PROGRESSBAR ==========
+        style.configure('TProgressbar',
+            background=self.colors['primary_blue'],
+            borderwidth=1,
+            lightcolor=self.colors['light_blue'],
+            darkcolor=self.colors['primary_blue']
+        )
+        
+        # ========== SEPARATOR ==========
+        style.configure('TSeparator',
+            background=self.colors['medium_blue']
+        )
+        
+        return style
     
-    def _setup_navigation_styles(self, style):
-        """Configure les styles des boutons de navigation"""
-        # Bouton Accueil (Vert)
-        style.configure("Nav.Home.TButton", 
-                       padding=(12, 8), 
-                       font=("Helvetica", 9, "bold"),
-                       foreground='white',
-                       background=self.colors['success'])
-        
-        style.map("Nav.Home.TButton",
-                 background=[('active', '#27ae60')])
-        
-        # Bouton Élèves (Bleu)
-        style.configure("Nav.Students.TButton", 
-                       padding=(12, 8), 
-                       font=("Helvetica", 9, "bold"),
-                       foreground='white',
-                       background=self.colors['primary'])
-        
-        style.map("Nav.Students.TButton",
-                 background=[('active', '#2c3e50')])
-        
-        # Bouton Événements (Bleu clair)
-        style.configure("Nav.Events.TButton", 
-                       padding=(12, 8), 
-                       font=("Helvetica", 9, "bold"),
-                       foreground='white',
-                       background=self.colors['info'])
-        
-        style.map("Nav.Events.TButton",
-                 background=[('active', '#3498db')])
-        
-        # Bouton Import (Orange)
-        style.configure("Nav.Import.TButton", 
-                       padding=(12, 8), 
-                       font=("Helvetica", 9, "bold"),
-                       foreground='white',
-                       background=self.colors['warning'])
-        
-        style.map("Nav.Import.TButton",
-                 background=[('active', '#e67e22')])
+    def get_button_style(self, button_type="primary"):
+        """Retourne le style de bouton approprié"""
+        style_map = {
+            "primary": "Primary.TButton",
+            "secondary": "Secondary.TButton", 
+            "success": "Success.TButton",
+            "warning": "Warning.TButton",
+            "error": "Error.TButton",
+            "light": "Light.TButton",
+            "info": "Primary.TButton"
+        }
+        return style_map.get(button_type, "Primary.TButton")
     
-    def _setup_labelframe_styles(self, style):
-        """Configure les styles des LabelFrames"""
-        # Style Success (Vert)
-        style.configure("Success.TLabelframe", 
-                       background="#d5f4e6", 
-                       borderwidth=2, 
-                       relief="solid",
-                       bordercolor=self.colors['success'])
+    def configure_window(self, window, title="Application"):
+        """Configure l'apparence d'une fenêtre"""
+        window.configure(bg=self.colors['off_white'])
+        window.title(title)
         
-        style.configure("Success.TLabelframe.Label", 
-                       font=("Helvetica", 10, "bold"), 
-                       background="#d5f4e6",
-                       foreground=self.colors['success'])
-        
-        # Style Info (Bleu)
-        style.configure("Info.TLabelframe", 
-                       background="#e3f2fd", 
-                       borderwidth=2, 
-                       relief="solid",
-                       bordercolor=self.colors['info'])
-        
-        style.configure("Info.TLabelframe.Label", 
-                       font=("Helvetica", 10, "bold"), 
-                       background="#e3f2fd",
-                       foreground=self.colors['info'])
-        
-        # Style Warning (Orange)
-        style.configure("Warning.TLabelframe", 
-                       background="#fff3cd", 
-                       borderwidth=2, 
-                       relief="solid",
-                       bordercolor=self.colors['warning'])
-        
-        style.configure("Warning.TLabelframe.Label", 
-                       font=("Helvetica", 10, "bold"), 
-                       background="#fff3cd",
-                       foreground=self.colors['warning'])
-        
-        # Style Primary (Bleu foncé)
-        style.configure("Primary.TLabelframe", 
-                       background="#e8eaf6", 
-                       borderwidth=2, 
-                       relief="solid",
-                       bordercolor=self.colors['primary'])
-        
-        style.configure("Primary.TLabelframe.Label", 
-                       font=("Helvetica", 10, "bold"), 
-                       background="#e8eaf6",
-                       foreground=self.colors['primary'])
+        # Icône de fenêtre (si disponible)
+        try:
+            # window.iconbitmap('path/to/icon.ico')
+            pass
+        except:
+            pass
     
-    def _setup_misc_styles(self, style):
-        """Configure les autres styles"""
-        # Style pour les Treeview
-        style.configure("Treeview.Heading", 
-                       font=("Helvetica", 9, "bold"),
-                       background=self.colors['light'],
-                       foreground=self.colors['text_primary'])
-        
-        # Style pour les Combobox
-        style.configure("TCombobox", 
-                       fieldbackground=self.colors['white'],
-                       font=("Helvetica", 9))
+    def create_card_frame(self, parent, **kwargs):
+        """Crée un frame avec style carte"""
+        frame = ttk.Frame(parent, style='Card.TFrame', **kwargs)
+        return frame
     
-    def get_navbar_config(self):
-        """Retourne la configuration pour la barre de navigation"""
+    def create_header_frame(self, parent, **kwargs):
+        """Crée un frame d'en-tête"""
+        frame = ttk.Frame(parent, style='Header.TFrame', **kwargs)
+        return frame
+    
+    # ========== MÉTHODES MANQUANTES AJOUTÉES ==========
+    def get_title_frame_config(self):
+        """Retourne la configuration pour les frames de titre"""
         return {
-            'bg': self.colors['navbar'],
-            'height': 60
+            'bg': self.colors['primary_blue'],
+            'relief': 'flat',
+            'borderwidth': 0
         }
     
-    def get_title_frame_config(self, color_type='primary'):
-        """Retourne la configuration pour les frames de titre (SANS fg)"""
-        bg_colors = {
-            'primary': self.colors['primary'],
-            'success': self.colors['success'],
-            'info': self.colors['info'],
-            'warning': self.colors['warning']
-        }
-        
-        return {
-            'bg': bg_colors.get(color_type, self.colors['primary']),
-            'height': 80
-        }
+    def get_main_bg_color(self):
+        """Retourne la couleur de fond principale"""
+        return self.colors['off_white']
     
-    def get_title_label_config(self, color_type='primary'):
-        """Retourne la configuration pour les labels de titre"""
-        bg_colors = {
-            'primary': self.colors['primary'],
-            'success': self.colors['success'],
-            'info': self.colors['info'],
-            'warning': self.colors['warning']
-        }
-        
-        return {
-            'bg': bg_colors.get(color_type, self.colors['primary']),
-            'fg': self.colors['white'],
-            'font': ("Helvetica", 18, "bold")
-        }
-    
-    def get_subtitle_label_config(self, color_type='primary'):
-        """Retourne la configuration pour les labels de sous-titre"""
-        bg_colors = {
-            'primary': self.colors['primary'],
-            'success': self.colors['success'],
-            'info': self.colors['info'],
-            'warning': self.colors['warning']
-        }
-        
-        return {
-            'bg': bg_colors.get(color_type, self.colors['primary']),
-            'fg': self.colors['text_light'],
-            'font': ("Helvetica", 10)
-        }
-    
-    def get_button_config(self, button_type='default'):
-        """Retourne la configuration pour les boutons"""
-        configs = {
-            'success': {
-                'bg': self.colors['success'],
-                'fg': self.colors['white'],
-                'activebackground': '#27ae60',
-                'font': ("Helvetica", 8, "bold"),
-                'relief': 'flat',
-                'padx': 10,
-                'pady': 5
-            },
-            'danger': {
-                'bg': self.colors['danger'],
-                'fg': self.colors['white'],
-                'activebackground': '#c0392b',
-                'font': ("Helvetica", 8, "bold"),
-                'relief': 'flat',
-                'padx': 10,
-                'pady': 5
-            },
-            'warning': {
-                'bg': self.colors['warning'],
-                'fg': self.colors['white'],
-                'activebackground': '#e67e22',
-                'font': ("Helvetica", 8, "bold"),
-                'relief': 'flat',
-                'padx': 10,
-                'pady': 5
-            },
-            'info': {
-                'bg': self.colors['info'],
-                'fg': self.colors['white'],
-                'activebackground': '#3498db',
-                'font': ("Helvetica", 8, "bold"),
-                'relief': 'flat',
-                'padx': 10,
-                'pady': 5
-            }
-        }
-        
-        return configs.get(button_type, configs['success'])
-    
-    def get_card_config(self, card_type='default'):
+    def get_card_config(self):
         """Retourne la configuration pour les cartes"""
-        configs = {
-            'success': {
-                'bg': '#d5f4e6',
-                'header_bg': self.colors['success'],
-                'border_color': self.colors['success']
-            },
-            'info': {
-                'bg': '#e3f2fd',
-                'header_bg': self.colors['info'],
-                'border_color': self.colors['info']
-            },
-            'warning': {
-                'bg': '#fff3cd',
-                'header_bg': self.colors['warning'],
-                'border_color': self.colors['warning']
-            },
-            'primary': {
-                'bg': '#e8eaf6',
-                'header_bg': self.colors['primary'],
-                'border_color': self.colors['primary']
-            }
+        return {
+            'bg': self.colors['white'],
+            'relief': 'solid',
+            'borderwidth': 1,
+            'bd': 1
         }
-        
-        return configs.get(card_type, configs['primary'])
     
-    def get_badge_config(self, badge_type='primary'):
-        """Retourne la configuration pour les badges"""
-        configs = {
-            'success': {
-                'bg': self.colors['success'],
-                'fg': self.colors['white']
-            },
-            'info': {
-                'bg': self.colors['info'],
-                'fg': self.colors['white']
-            },
-            'warning': {
-                'bg': self.colors['warning'],
-                'fg': self.colors['white']
-            },
-            'primary': {
-                'bg': self.colors['primary'],
-                'fg': self.colors['white']
-            }
+    def get_header_config(self):
+        """Retourne la configuration pour l'en-tête"""
+        return {
+            'bg': self.colors['primary_blue'],
+            'relief': 'flat',
+            'borderwidth': 0
         }
-        
-        return configs.get(badge_type, configs['primary'])
