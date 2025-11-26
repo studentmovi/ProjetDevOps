@@ -79,7 +79,7 @@ def get_all_students() -> List[Dict[str, Any]]:
     """Retourne tous les élèves (données hardcodées pour test - à remplacer par DB)"""
     return [
         # 1ère année - Toutes les classes
-        {"id": 1, "nom": "Dubois", "prenom": "Alice", "annee": "1", "classe": "1A"},
+        {"id": 1, "nom": "Dubois", "prenom": "Alice", "annee": "1", "classe": "1A","option": "Sciences"},
         {"id": 2, "nom": "Martin", "prenom": "Pierre", "annee": "1", "classe": "1A"},
         {"id": 3, "nom": "Bernard", "prenom": "Sophie", "annee": "1", "classe": "1A"},
         {"id": 4, "nom": "Petit", "prenom": "Lucas", "annee": "1", "classe": "1B"},

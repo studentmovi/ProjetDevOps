@@ -17,3 +17,8 @@ Version 0.3.0
 -Update de l'UI
 -Modification de la vu Home
 -Mise en place de la logique d'importation d'excel
+
+Version 0.4.0
+-Update du filtre
+-Update des données et affichage des etudiant
+-Ajout d'un calendrier fonctionnel sur la page home
