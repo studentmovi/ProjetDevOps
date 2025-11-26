@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import sys
+import os
+
+# Ajout du chemin pour les imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from component.FilterPanel import FilterPanel
 from component.Button import StyledButton
 from controller.StudentViewController import StudentViewController
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class StudentView:
     """Vue principale pour la gestion des élèves"""
@@ -22,29 +25,12 @@ class StudentView:
         self.year_combo = None
         self.class_combo = None
         self.event_combo = None
-        self.month_combo = None
         self.sort_combo = None
         
         # Conteneurs pour l'affichage
         self.treeview = None
         self.status_label = None
         self.toolbar_frame = None
-        self.filter_panel = None
-        
-        # Données des événements par mois
-        self.events_by_month = {
-            "Tous": "Tous les mois",
-            "Septembre": ["Sortie Théâtre", "Concert"],
-            "Octobre": ["Visite Musée"],
-            "Novembre": ["Sortie Théâtre"],
-            "Décembre": ["Concert"],
-            "Janvier": ["Voyage Paris"],
-            "Février": ["Visite Musée"],
-            "Mars": ["Sortie Théâtre", "Concert"],
-            "Avril": ["Voyage Paris"],
-            "Mai": ["Visite Musée", "Concert"],
-            "Juin": ["Sortie Théâtre"]
-        }
         
     def create_widgets(self):
         """Méthode appelée par main.py pour créer les widgets"""
@@ -57,15 +43,11 @@ class StudentView:
         
         self.frame = ttk.Frame(self.root)
         
-        # CORRECTION : Ne pas utiliser configure(bg=...) sur root ici
-        # self.root.configure(bg=self.styles.colors['off_white'])  # ❌ SUPPRIMÉ
-        
         # Initialiser le contrôleur avec cette vue
         self.controller = StudentViewController(self)
         
-        self._create_header()
         self._create_toolbar()
-        self._create_compact_filter_panel()
+        self._create_filter_panel()
         self._create_main_content()
         self._create_status_bar()
         
@@ -86,8 +68,6 @@ class StudentView:
                 self.class_combo.set("Toutes")
             if self.event_combo:
                 self.event_combo.set("Tous")
-            if self.month_combo:
-                self.month_combo.set("Tous")
             if self.sort_combo:
                 self.sort_combo.set("Nom A-Z")
             
@@ -95,41 +75,22 @@ class StudentView:
         except Exception as e:
             print(f"Erreur initialisation filtres: {e}")
     
-    def _create_header(self):
-        """Crée l'en-tête avec le nouveau style bleu"""
-        header_frame = self.styles.create_header_frame(self.frame, padding="15")
-        header_frame.pack(fill="x", pady=(0, 10))
-        
-        title_label = ttk.Label(
-            header_frame, 
-            text="🎓 Gestion des Élèves", 
-            style="Header.TLabel"
-        )
-        title_label.pack(side="left")
-        
-        self.data_source_label = ttk.Label(
-            header_frame, 
-            text="📄 Données JSON", 
-            style="Header.TLabel"
-        )
-        self.data_source_label.pack(side="right")
-        
     def _create_toolbar(self):
-        """Crée la barre d'outils avec le nouveau style"""
+        """Crée la barre d'outils simplifiée - MODIFIÉ"""
         self.toolbar_frame = ttk.LabelFrame(
             self.frame, 
             text="⚙️ Actions Rapides", 
             style="Compact.TLabelframe",
             padding="8"
         )
-        self.toolbar_frame.pack(fill="x", pady=(0, 8))
+        self.toolbar_frame.pack(fill="x", pady=(10, 8))
         
         buttons_frame = ttk.Frame(self.toolbar_frame)
         buttons_frame.pack(fill="x")
         
-        # Groupe Import/Export à gauche
+        # Groupe Import à gauche
         import_frame = ttk.Frame(buttons_frame)
-        import_frame.pack(side="left", fill="x", expand=True)
+        import_frame.pack(side="left")
         
         import_excel_btn = ttk.Button(
             import_frame,
@@ -137,38 +98,14 @@ class StudentView:
             command=self._on_import_excel,
             style="Primary.TButton"
         )
-        import_excel_btn.pack(side="left", padx=(0, 5))
+        import_excel_btn.pack(side="left")
         
-        refresh_btn = ttk.Button(
-            import_frame,
-            text="🔄 Actualiser",
-            command=self._on_refresh,
-            style="Secondary.TButton"
-        )
-        refresh_btn.pack(side="left", padx=(5, 0))
-        
-        # Groupe Actions à droite
-        selection_frame = ttk.Frame(buttons_frame)
-        selection_frame.pack(side="right")
-        
-        select_all_btn = ttk.Button(
-            selection_frame,
-            text="☑️ Tout sélectionner",
-            command=self._safe_select_all,
-            style="Light.TButton"
-        )
-        select_all_btn.pack(side="left", padx=(0, 5))
-        
-        deselect_all_btn = ttk.Button(
-            selection_frame,
-            text="☐ Tout désélectionner",
-            command=self._safe_deselect_all,
-            style="Light.TButton"
-        )
-        deselect_all_btn.pack(side="left", padx=(0, 8))
+        # Groupe Actions d'événements à droite - RÉDUIT
+        events_frame = ttk.Frame(buttons_frame)
+        events_frame.pack(side="right")
         
         assign_event_btn = ttk.Button(
-            selection_frame,
+            events_frame,
             text="📅 Assigner événement",
             command=self._safe_assign_to_event,
             style="Success.TButton"
@@ -176,15 +113,15 @@ class StudentView:
         assign_event_btn.pack(side="left", padx=(0, 5))
         
         calculate_cost_btn = ttk.Button(
-            selection_frame,
+            events_frame,
             text="💰 Calculer coût",
             command=self._safe_calculate_event_cost,
             style="Warning.TButton"
         )
         calculate_cost_btn.pack(side="left")
     
-    def _create_compact_filter_panel(self):
-        """Crée un panneau de filtres COMPACT avec événements et mois"""
+    def _create_filter_panel(self):
+        """Crée un panneau de filtres avec tous les boutons - MODIFIÉ"""
         filter_frame = ttk.LabelFrame(
             self.frame, 
             text="🔍 Filtres", 
@@ -193,7 +130,7 @@ class StudentView:
         )
         filter_frame.pack(fill="x", pady=(0, 8))
         
-        # LIGNE 1: RECHERCHE + TRI (horizontal)
+        # LIGNE 1: RECHERCHE + TRI
         row1 = ttk.Frame(filter_frame)
         row1.pack(fill="x", pady=(0, 6))
         
@@ -209,8 +146,6 @@ class StudentView:
         sort_frame = ttk.Frame(row1)
         sort_frame.pack(side="right")
         
-
-        
         ttk.Label(sort_frame, text="Tri", font=("Arial", 10)).pack(side="left", padx=(0, 3))
         self.sort_combo = ttk.Combobox(
             sort_frame, 
@@ -222,7 +157,7 @@ class StudentView:
         self.sort_combo.set("Nom A-Z")
         self.sort_combo.pack(side="left")
         
-        # LIGNE 2: FILTRES PRINCIPAUX
+        # LIGNE 2: FILTRES PRINCIPAUX + ÉVÉNEMENT
         row2 = ttk.Frame(filter_frame)
         row2.pack(fill="x", pady=(3, 0))
         
@@ -259,26 +194,11 @@ class StudentView:
         self.class_combo.set("Toutes")
         self.class_combo.pack(side="left")
         
-        # Mois
-        month_frame = ttk.Frame(filters_container)
-        month_frame.pack(side="left", padx=(0, 12))
-        
-        ttk.Label(month_frame, text="Mois", font=("Arial", 9)).pack(side="left", padx=(0, 2))
-        self.month_combo = ttk.Combobox(
-            month_frame, 
-            values=["Tous", "Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin"], 
-            state="readonly", 
-            width=10,
-            font=("Arial", 9)
-        )
-        self.month_combo.set("Tous")
-        self.month_combo.pack(side="left")
-        
-        # Événement
+        # Filtre par événement
         event_frame = ttk.Frame(filters_container)
         event_frame.pack(side="left", padx=(0, 12))
         
-        ttk.Label(event_frame, text="Événements", font=("Arial", 9)).pack(side="left", padx=(0, 2))
+        ttk.Label(event_frame, text="Événement", font=("Arial", 9)).pack(side="left", padx=(0, 2))
         self.event_combo = ttk.Combobox(
             event_frame, 
             values=["Tous", "Sortie Théâtre", "Visite Musée", "Concert", "Voyage Paris"], 
@@ -289,9 +209,42 @@ class StudentView:
         self.event_combo.set("Tous")
         self.event_combo.pack(side="left")
         
-        # Boutons d'action
-        actions_frame = ttk.Frame(row2)
-        actions_frame.pack(side="right", padx=(10, 0))
+        # LIGNE 3: BOUTONS D'ACTION - NOUVEAU
+        row3 = ttk.Frame(filter_frame)
+        row3.pack(fill="x", pady=(6, 0))
+        
+        # Boutons de sélection à gauche
+        selection_frame = ttk.Frame(row3)
+        selection_frame.pack(side="left")
+        
+        select_all_btn = ttk.Button(
+            selection_frame,
+            text="☑️ Tout sélectionner",
+            command=self._safe_select_all,
+            style="Light.TButton"
+        )
+        select_all_btn.pack(side="left", padx=(0, 5))
+        
+        deselect_all_btn = ttk.Button(
+            selection_frame,
+            text="☐ Tout désélectionner",
+            command=self._safe_deselect_all,
+            style="Light.TButton"
+        )
+        deselect_all_btn.pack(side="left", padx=(0, 5))
+        
+        # Actualiser à côté
+        refresh_btn = ttk.Button(
+            selection_frame,
+            text="🔄 Actualiser",
+            command=self._on_refresh,
+            style="Secondary.TButton"
+        )
+        refresh_btn.pack(side="left", padx=(0, 5))
+        
+        # Boutons d'action à droite
+        actions_frame = ttk.Frame(row3)
+        actions_frame.pack(side="right")
         
         reset_btn = ttk.Button(
             actions_frame,
@@ -312,7 +265,6 @@ class StudentView:
         export_btn.pack(side="left")
         
         self._setup_filter_bindings()
-        self.filter_panel = filter_frame
     
     def _setup_filter_bindings(self):
         """Configure les bindings pour les filtres"""
@@ -323,39 +275,25 @@ class StudentView:
                 self.year_combo.bind('<<ComboboxSelected>>', self._safe_on_year_changed)
             if self.class_combo:
                 self.class_combo.bind('<<ComboboxSelected>>', self._safe_on_filter_changed)
-            if self.month_combo:
-                self.month_combo.bind('<<ComboboxSelected>>', self._safe_on_month_changed)
             if self.event_combo:
-                self.event_combo.bind('<<ComboboxSelected>>', self._safe_on_event_changed)
+                self.event_combo.bind('<<ComboboxSelected>>', self._safe_on_filter_changed)
             if self.sort_combo:
                 self.sort_combo.bind('<<ComboboxSelected>>', self._safe_on_sort_changed)
                 
             self._setup_search_placeholder()
+            self._load_event_filter_options()
             
         except Exception as e:
             print(f"Erreur bindings: {e}")
     
-    def _safe_on_month_changed(self, event=None):
-        """Gestion du changement de mois - met à jour les événements"""
-        try:
-            selected_month = self.month_combo.get()
-            
-            if selected_month == "Tous":
-                events = ["Tous", "Sortie Théâtre", "Visite Musée", "Concert", "Voyage Paris"]
-            else:
-                events = ["Tous"] + self.events_by_month.get(selected_month, [])
-            
-            current_event = self.event_combo.get()
-            self.event_combo.configure(values=events)
-            
-            if current_event not in events:
-                self.event_combo.set("Tous")
-            
-            if self.controller:
-                self.controller.on_month_changed(event)
-                
-        except Exception as e:
-            print(f"Erreur changement mois: {e}")
+    def _load_event_filter_options(self):
+        """Charge les options de filtre événement depuis le contrôleur"""
+        if self.controller and self.event_combo:
+            try:
+                events = self.controller.get_events_for_filter()
+                self.event_combo.configure(values=events)
+            except Exception as e:
+                print(f"Erreur chargement événements: {e}")
     
     def _setup_search_placeholder(self):
         """Configure le placeholder pour la recherche"""
@@ -364,62 +302,57 @@ class StudentView:
         def on_focus_in(event):
             if self.search_entry.get() == placeholder_text:
                 self.search_entry.delete(0, tk.END)
-                # CORRECTION : Utiliser les couleurs des styles
-                # self.search_entry.config(foreground=self.styles.colors['text_gray'])  # Pas besoin
         
         def on_focus_out(event):
             if not self.search_entry.get():
                 self.search_entry.insert(0, placeholder_text)
-                # CORRECTION : Pas de config foreground direct
-                # self.search_entry.config(foreground=self.styles.colors['medium_gray'])
         
         self.search_entry.insert(0, placeholder_text)
-        # self.search_entry.config(foreground=self.styles.colors['medium_gray'])  # SUPPRIMÉ
-        
         self.search_entry.bind('<FocusIn>', on_focus_in)
         self.search_entry.bind('<FocusOut>', on_focus_out)
     
     def _create_main_content(self):
-        """Crée la zone principale avec Treeview"""
+        """Crée la zone principale avec Treeview - COLONNES AJUSTÉES"""
         main_frame = ttk.Frame(self.frame)
         main_frame.pack(fill="both", expand=True, pady=(0, 8))
         
-        columns = ("selection", "nom", "classe", "annee", "source", "evenements", "actions")
+        columns = ("selection", "nom", "prenom", "classe", "annee", "option", "evenements", "actions")
         
         self.treeview = ttk.Treeview(
             main_frame,
             columns=columns,
             show="tree headings",
-            height=12,
+            height=15,
             selectmode="extended"
         )
         
+        # Scrollbars
         v_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=self.treeview.yview)
         h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.treeview.xview)
         
         self.treeview.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
         
-        # Configuration des colonnes
+        # Configuration des colonnes - AJUSTÉES selon vos demandes
         self.treeview.column("#0", width=25, minwidth=25, stretch=False)
         self.treeview.column("selection", width=40, minwidth=40, stretch=False, anchor="center")
-        self.treeview.column("nom", width=180, minwidth=120, stretch=True)
-        self.treeview.column("classe", width=70, minwidth=60, stretch=False)
+        self.treeview.column("nom", width=120, minwidth=100, stretch=True)
+        self.treeview.column("prenom", width=120, minwidth=100, stretch=True)
+        self.treeview.column("classe", width=50, minwidth=45, stretch=False)  # RÉDUIT
         self.treeview.column("annee", width=70, minwidth=60, stretch=False)
-        self.treeview.column("email", width=200, minwidth=120, stretch=True)
-        self.treeview.column("source", width=70, minwidth=60, stretch=False)
-        self.treeview.column("evenements", width=110, minwidth=90, stretch=False)
-        self.treeview.column("actions", width=160, minwidth=140, stretch=False)
+        self.treeview.column("option", width=100, minwidth=80, stretch=False)
+        self.treeview.column("evenements", width=200, minwidth=150, stretch=True)
+        self.treeview.column("actions", width=200, minwidth=180, stretch=False)  # AUGMENTÉ
         
         # En-têtes
         self.treeview.heading("#0", text="", anchor="w")
         self.treeview.heading("selection", text="☑️", anchor="center")
-        self.treeview.heading("nom", text="👤 Nom", anchor="w")
-        self.treeview.heading("classe", text="🏫 Classe", anchor="center")
-        self.treeview.heading("annee", text="📚 Année", anchor="center")
-        self.treeview.heading("email", text="📧 Email", anchor="w")
-        self.treeview.heading("source", text="📊 Source", anchor="center")
-        self.treeview.heading("evenements", text="📅 Événements", anchor="center")
-        self.treeview.heading("actions", text="⚙️ Actions", anchor="center")
+        self.treeview.heading("nom", text="Nom", anchor="w")
+        self.treeview.heading("prenom", text="Prénom", anchor="w")
+        self.treeview.heading("classe", text="Classe", anchor="center")
+        self.treeview.heading("annee", text="Année", anchor="center")
+        self.treeview.heading("option", text="Option", anchor="center")
+        self.treeview.heading("evenements", text="Événements", anchor="w")
+        self.treeview.heading("actions", text="Actions", anchor="center")
         
         # Tags pour les styles
         self.treeview.tag_configure("selected", 
@@ -443,8 +376,7 @@ class StudentView:
         
         # Bindings
         self.treeview.bind("<Double-1>", self._on_treeview_double_click)
-        self.treeview.bind("<Button-3>", self._on_treeview_right_click)
-        self.treeview.bind("<<TreeviewSelect>>", self._on_treeview_select)
+        self.treeview.bind("<Button-1>", self._on_treeview_click)
     
     def _create_status_bar(self):
         """Crée la barre de statut"""
@@ -459,8 +391,53 @@ class StudentView:
         )
         self.status_label.pack(side="left", fill="x", expand=True)
     
+    def _format_events_display(self, events_list):
+        """Formate l'affichage des événements - NOUVEAU"""
+        if not events_list or len(events_list) == 0:
+            return "Aucun événement"
+        elif len(events_list) == 1:
+            return events_list[0]
+        else:
+            # Si plusieurs événements, afficher le premier + compteur
+            return f"{events_list[0]} (+{len(events_list)-1} autres)"
+    
+    def _create_events_popup(self, events_list, x, y):
+        """Crée un popup pour afficher tous les événements - NOUVEAU"""
+        if len(events_list) <= 1:
+            return
+        
+        popup = tk.Toplevel(self.treeview)
+        popup.wm_overrideredirect(True)
+        popup.configure(bg="lightyellow", relief="solid", borderwidth=1)
+        
+        # Positionner le popup
+        popup.geometry(f"+{x}+{y}")
+        
+        # Titre
+        title_label = tk.Label(popup, text="Événements assignés:", 
+                              font=("Arial", 9, "bold"), 
+                              bg="lightyellow")
+        title_label.pack(padx=5, pady=(5, 2))
+        
+        # Liste des événements
+        for event in events_list:
+            event_label = tk.Label(popup, text=f"• {event}", 
+                                  font=("Arial", 8), 
+                                  bg="lightyellow")
+            event_label.pack(anchor="w", padx=10, pady=1)
+        
+        # Fermer automatiquement après 3 secondes
+        popup.after(3000, popup.destroy)
+        
+        # Fermer si on clique ailleurs
+        def close_popup(event):
+            popup.destroy()
+        
+        popup.bind("<Button-1>", close_popup)
+        popup.bind("<FocusOut>", close_popup)
+    
     def update_display(self):
-        """Met à jour l'affichage"""
+        """Met à jour l'affichage de la liste des étudiants - MODIFIÉ"""
         if not self.controller:
             if self.status_label:
                 self.status_label.config(text="❌ Erreur: Contrôleur non initialisé")
@@ -480,33 +457,59 @@ class StudentView:
         
         if not filtered_students:
             self.treeview.insert("", "end", text="", values=(
-                "", "🔍 Aucun élève trouvé", "", "", "", "", "", ""
+                "", "🔍 Aucun étudiant trouvé", "", "", "", "", "", ""
             ))
         else:
             for i, student in enumerate(filtered_students):
                 try:
-                    is_selected = student["id"] in selected_students
+                    student_id = student.get('id', '')
                     
-                    year_text = f"{student.get('annee', '?')}ème"
-                    email_text = student.get('email', '')[:30] + "..." if len(student.get('email', '')) > 30 else student.get('email', '')
-                    source_text = "📊" if student.get('source') == 'excel' else "📄"
-                    nom_complet = f"{student['prenom']} {student['nom'].upper()}"
-                    selection_text = "☑️" if is_selected else "☐"
+                    # Icône de sélection
+                    selection_icon = "☑️" if student_id in selected_students else "☐"
                     
-                    item_id = self.treeview.insert("", "end", 
-                        text="👤",
+                    # Événements - AMÉLIORATION DE L'AFFICHAGE
+                    events_text = self.controller.get_student_events(student)
+                    if events_text == "Aucun":
+                        formatted_events = "Aucun événement"
+                    else:
+                        # Séparer les événements
+                        events_list = [e.strip() for e in events_text.split(',') if e.strip()]
+                        formatted_events = self._format_events_display(events_list)
+                    
+                    # Actions avec plus d'espace
+                    actions_text = "👁️ Voir détails | 🗑️ Supprimer"
+                    
+                    # Option
+                    option_text = student.get('option', 'Aucune')
+                    
+                    # Couleur alternée
+                    tag = "even" if i % 2 == 0 else "odd"
+                    if student_id in selected_students:
+                        tag = "selected"
+                    
+                    item = self.treeview.insert("", "end", 
+                        iid=f"student_{student_id}",
+                        text="", 
                         values=(
-                            selection_text, nom_complet, student['classe'], 
-                            year_text, email_text, source_text, 
-                            "📅 Aucun", "👁️ Voir | 🗑️ Suppr."
+                            selection_icon,
+                            student.get('nom', ''),
+                            student.get('prenom', ''),
+                            student.get('classe', ''),
+                            f"{student.get('annee', '')}ème",
+                            option_text,
+                            formatted_events,
+                            actions_text
                         ),
-                        tags=("selected" if is_selected else ("odd" if i % 2 else "even"),)
+                        tags=(tag,)
                     )
                     
-                    self.treeview.set(item_id, "student_id", student["id"])
+                    # Stocker la liste complète des événements pour le popup
+                    if events_text != "Aucun":
+                        events_list = [e.strip() for e in events_text.split(',') if e.strip()]
+                        setattr(self.treeview, f"events_{student_id}", events_list)
                     
                 except Exception as e:
-                    print(f"Erreur création ligne: {e}")
+                    print(f"Erreur affichage étudiant {student}: {e}")
         
         # Statut
         try:
@@ -529,12 +532,69 @@ class StudentView:
             if self.status_label:
                 self.status_label.config(text=f"❌ Erreur: {e}")
     
+    # ========== GESTION DES CLICS - MODIFIÉ ==========
+    def _on_treeview_click(self, event):
+        """Gère les clics sur le treeview"""
+        item = self.treeview.identify_row(event.y)
+        column = self.treeview.identify_column(event.x)
+        
+        if item and item.startswith("student_"):
+            student_id = int(item.replace("student_", ""))
+            
+            # Clic sur la colonne de sélection
+            if column == "#1":  # Colonne selection
+                self._toggle_student_selection(student_id)
+            # Clic sur la colonne événements - NOUVEAU
+            elif column == "#7":  # Colonne événements
+                events_list = getattr(self.treeview, f"events_{student_id}", None)
+                if events_list and len(events_list) > 1:
+                    # Calculer la position pour le popup
+                    x = event.x_root
+                    y = event.y_root
+                    self._create_events_popup(events_list, x, y)
+            # Clic sur la colonne actions
+            elif column == "#8":  # Colonne actions
+                self._handle_action_click(event, student_id)
+    
+    def _on_treeview_double_click(self, event):
+        """Gère les double-clics (ouvre les détails)"""
+        item = self.treeview.identify_row(event.y)
+        if item and item.startswith("student_"):
+            student_id = int(item.replace("student_", ""))
+            self._safe_view_student(student_id)
+    
+    def _handle_action_click(self, event, student_id):
+        """Gère les clics sur la colonne actions"""
+        menu = tk.Menu(self.treeview, tearoff=0)
+        menu.add_command(label="👁️ Voir détails", 
+                        command=lambda: self._safe_view_student(student_id))
+        menu.add_separator()
+        menu.add_command(label="🗑️ Supprimer", 
+                        command=lambda: self._safe_delete_student(student_id))
+        
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+    
+    def _toggle_student_selection(self, student_id):
+        """Bascule la sélection d'un étudiant"""
+        if self.controller:
+            try:
+                selected = self.controller.toggle_student_selection(student_id)
+                self.update_display()
+                return selected
+            except Exception as e:
+                print(f"Erreur toggle sélection: {e}")
+                return False
+    
     # ========== MÉTHODES SAFE ==========
     def _safe_select_all(self):
         if self.controller:
             try:
                 self.controller.select_all()
-                messagebox.showinfo("✅ Sélection", "Tous les élèves sélectionnés")
+                # Enlever le messagebox pour une meilleure UX
+                print("Tous les étudiants sélectionnés")
             except Exception as e:
                 messagebox.showerror("❌ Erreur", f"Erreur sélection: {e}")
     
@@ -542,58 +602,62 @@ class StudentView:
         if self.controller:
             try:
                 self.controller.deselect_all()
-                messagebox.showinfo("☐ Désélection", "Tous les élèves désélectionnés")
+                print("Tous les étudiants désélectionnés")
             except Exception as e:
                 messagebox.showerror("❌ Erreur", f"Erreur désélection: {e}")
     
     def _safe_assign_to_event(self):
         if self.controller:
             try:
-                selected_count = len(self.controller.get_selected_students())
-                if selected_count == 0:
-                    messagebox.showwarning("⚠️ Attention", "Aucun élève sélectionné")
-                    return
-                messagebox.showinfo("📅 Événement", f"Assignation pour {selected_count} élèves\n(À développer)")
+                self.controller.assign_to_event()
             except Exception as e:
                 messagebox.showerror("❌ Erreur", f"Erreur assignation: {e}")
     
     def _safe_calculate_event_cost(self):
         if self.controller:
             try:
-                selected_count = len(self.controller.get_selected_students())
-                if selected_count == 0:
-                    messagebox.showwarning("⚠️ Attention", "Aucun élève sélectionné")
-                    return
-                messagebox.showinfo("💰 Coût", f"Calcul pour {selected_count} élèves\n(À développer)")
+                self.controller.calculate_event_cost()
             except Exception as e:
-                messagebox.showerror("❌ Erreur", f"Erreur calcul: {e}")
-    
-    # ========== CALLBACKS SIMPLIFIÉS ==========
-    def _safe_toggle_student_selection(self, student_id):
-        if self.controller:
-            try:
-                self.controller.toggle_student_selection(student_id)
-                self.update_display()
-            except Exception as e:
-                print(f"Erreur toggle: {e}")
+                messagebox.showerror("❌ Erreur", f"Erreur calcul coût: {e}")
     
     def _safe_view_student(self, student_id):
-        messagebox.showinfo("👁️ Voir", f"Détails élève ID: {student_id}\n(À développer)")
+        if self.controller:
+            try:
+                self.controller.view_student(student_id)
+            except Exception as e:
+                messagebox.showerror("❌ Erreur", f"Erreur affichage détails: {e}")
     
     def _safe_delete_student(self, student_id):
-        result = messagebox.askyesno("🗑️ Supprimer", f"Supprimer l'élève ID: {student_id} ?")
-        if result:
-            messagebox.showinfo("🗑️ Suppression", "Suppression effectuée\n(À développer)")
+        if self.controller:
+            try:
+                current_data = self.controller.get_students_data()
+                student = next((s for s in current_data if s["id"] == student_id), None)
+                if student:
+                    student_name = f"{student.get('prenom', '')} {student.get('nom', '')}"
+                    result = messagebox.askyesno("🗑️ Supprimer", 
+                                               f"Supprimer l'étudiant {student_name} ?\n\n"
+                                               "L'étudiant sera retiré de la liste mais pas supprimé définitivement.")
+                    if result:
+                        success = self.controller.delete_student(student_id)
+                        if success:
+                            messagebox.showinfo("✅ Suppression", f"{student_name} a été retiré de la liste.")
+                        else:
+                            messagebox.showerror("❌ Erreur", "Impossible de supprimer l'étudiant.")
+            except Exception as e:
+                messagebox.showerror("❌ Erreur", f"Erreur suppression: {e}")
     
     def _safe_export_data(self):
-        messagebox.showinfo("📤 Export", "Export des données\n(À développer)")
+        if self.controller:
+            try:
+                self.controller.export_filtered_data()
+            except Exception as e:
+                messagebox.showerror("❌ Erreur", f"Erreur export: {e}")
     
     def _safe_reset_filters(self):
         try:
-            self._initialize_default_filters()
             if self.controller:
                 self.controller.reset_filters()
-            messagebox.showinfo("🔄 Reset", "Filtres réinitialisés")
+            print("Filtres réinitialisés")
         except Exception as e:
             messagebox.showerror("❌ Erreur", f"Erreur reset: {e}")
     
@@ -602,70 +666,41 @@ class StudentView:
         if self.controller and self.search_entry:
             current_text = self.search_var.get()
             if current_text != "Nom, prénom...":
-                try:
-                    self.controller.on_search_changed(*args)
-                except Exception as e:
-                    print(f"Erreur recherche: {e}")
+                self.controller.on_search_changed()
     
     def _safe_on_year_changed(self, event=None):
         if self.controller:
             try:
                 self.controller.on_year_changed(event)
             except Exception as e:
-                print(f"Erreur année: {e}")
+                print(f"Erreur changement année: {e}")
     
     def _safe_on_filter_changed(self, event=None):
         if self.controller:
             try:
                 self.controller.on_filter_changed(event)
             except Exception as e:
-                print(f"Erreur filtre: {e}")
-    
-    def _safe_on_event_changed(self, event=None):
-        if self.controller:
-            try:
-                self.controller.on_event_changed(event)
-            except Exception as e:
-                print(f"Erreur événement: {e}")
+                print(f"Erreur changement filtre: {e}")
     
     def _safe_on_sort_changed(self, event=None):
         if self.controller:
             try:
                 self.controller.on_sort_changed(event)
             except Exception as e:
-                print(f"Erreur tri: {e}")
-    
-    # ========== TREEVIEW EVENTS ==========
-    def _on_treeview_double_click(self, event):
-        item = self.treeview.selection()[0] if self.treeview.selection() else None
-        if item:
-            try:
-                student_id = self.treeview.set(item, "student_id")
-                if student_id:
-                    self._safe_view_student(student_id)
-            except:
-                pass
-    
-    def _on_treeview_right_click(self, event):
-        item = self.treeview.identify_row(event.y)
-        if item:
-            self.treeview.selection_set(item)
-    
-    def _on_treeview_select(self, event):
-        pass
+                print(f"Erreur changement tri: {e}")
     
     # ========== AUTRES CALLBACKS ==========
     def _on_import_excel(self):
-        messagebox.showinfo("📊 Import", "Import Excel\n(À développer)")
-    
-    def _on_reset_json(self):
-        messagebox.showinfo("🔄 Reset", "Reset vers JSON\n(À développer)")
+        if self.controller:
+            try:
+                self.controller.import_excel_students()
+            except Exception as e:
+                messagebox.showerror("❌ Erreur", f"Erreur import Excel: {e}")
     
     def _on_refresh(self):
         try:
             if self.controller:
                 self.controller.refresh_data()
-                self.update_display()
         except Exception as e:
             messagebox.showerror("❌ Erreur", f"Erreur refresh: {e}")
     
@@ -674,9 +709,8 @@ class StudentView:
         if self.controller:
             try:
                 self.controller.apply_all_filters()
-                self.update_display()
             except Exception as e:
-                print(f"Erreur refresh: {e}")
+                print(f"Erreur refresh vue: {e}")
     
     def show(self):
         """Affiche la vue"""
@@ -687,9 +721,3 @@ class StudentView:
         """Cache la vue"""
         if self.frame:
             self.frame.pack_forget()
-
-
-# Classe d'alias pour maintenir la compatibilité
-class StudentsView(StudentView):
-    """Alias pour maintenir la compatibilité avec l'ancien nom"""
-    pass

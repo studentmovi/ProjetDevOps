@@ -19,7 +19,7 @@ class LauncherView:
         
     def setup_window(self):
         """Configure la fenêtre du loader"""
-        self.root.title("ProjetDevOps - Launcher")
+        self.root.title("TripSchool - Launcher")
         
         # Dimensions et centrage
         width, height = 450, 300
