@@ -8,6 +8,10 @@ from datetime import datetime, date, timedelta
 # Ajout du chemin pour les imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import des vraies données
+from data.event_data_manager import event_manager
+from data.sample_data import get_students_data_source
+
 class HomeView:
     """Vue d'accueil de l'application"""
     
@@ -15,25 +19,8 @@ class HomeView:
         self.root = root
         self.styles = styles
         self.frame = None
-        
-        # Données des événements avec dates
-        self.events_data = {
-            "2024-09-15": {"name": "Sortie Théâtre", "classes": ["3A", "3B"], "status": "passé"},
-            "2024-09-22": {"name": "Concert", "classes": ["5A", "5B", "5C"], "status": "passé"},
-            "2024-10-10": {"name": "Visite Musée", "classes": ["4A", "4B"], "status": "passé"},
-            "2024-11-18": {"name": "Sortie Théâtre", "classes": ["6A", "6B"], "status": "passé"},
-            "2024-12-05": {"name": "Concert", "classes": ["2A", "2B"], "status": "aujourd'hui" if datetime.now().strftime("%Y-%m-%d") == "2024-12-05" else "à venir"},
-            "2024-12-20": {"name": "Concert de Noël", "classes": ["1A", "1B", "2A"], "status": "à venir"},
-            "2025-01-15": {"name": "Voyage Paris", "classes": ["6A", "6B", "6C"], "status": "à venir"},
-            "2025-02-12": {"name": "Visite Musée", "classes": ["3A", "3B", "3C"], "status": "à venir"},
-            "2025-03-08": {"name": "Sortie Théâtre", "classes": ["4A", "4B"], "status": "à venir"},
-            "2025-03-25": {"name": "Concert", "classes": ["5A", "5B"], "status": "à venir"},
-            "2025-04-22": {"name": "Voyage Paris", "classes": ["5A", "5B", "5C"], "status": "à venir"},
-            "2025-05-10": {"name": "Visite Musée", "classes": ["1A", "1B"], "status": "à venir"},
-            "2025-05-28": {"name": "Concert", "classes": ["6A", "6B"], "status": "à venir"},
-            "2025-06-15": {"name": "Sortie Théâtre", "classes": ["2A", "2B", "2C"], "status": "à venir"}
-        }
-    
+        self.event_manager = event_manager
+
     def create_widgets(self):
         """Crée l'interface d'accueil avec calendrier et événements"""
         if self.frame:
@@ -49,6 +36,67 @@ class HomeView:
         
         self._create_quick_actions_section()
     
+    def _get_real_events_data(self):
+        """Récupère les vrais événements depuis le gestionnaire"""
+        try:
+            events_data = self.event_manager.get_events()
+            
+            # Gérer les différents formats de retour
+            if isinstance(events_data, dict):
+                events_list = list(events_data.values())
+            else:
+                events_list = events_data if events_data else []
+            
+            # Convertir au format attendu par la vue
+            formatted_events = {}
+            for event in events_list:
+                if isinstance(event, dict) and 'date' in event and 'nom' in event:
+                    try:
+                        event_date = datetime.strptime(event['date'], '%Y-%m-%d')
+                        current_date = datetime.now()
+                        
+                        # Déterminer le statut
+                        if event_date.date() < current_date.date():
+                            status = "passé"
+                        elif event_date.date() == current_date.date():
+                            status = "aujourd'hui"
+                        else:
+                            status = "à venir"
+                        
+                        # Récupérer les classes des participants
+                        participants = event.get('participants', {})
+                        students_data = get_students_data_source()
+                        classes_set = set()
+                        
+                        if isinstance(participants, dict):
+                            for student_id in participants.keys():
+                                student = next((s for s in students_data if str(s.get('id')) == str(student_id)), None)
+                                if student and 'classe' in student:
+                                    classes_set.add(student['classe'])
+                        
+                        # Si aucune classe trouvée, utiliser les classes par défaut ou celles de l'événement
+                        if not classes_set:
+                            if 'classes_concernees' in event:
+                                classes_set = set(event['classes_concernees'])
+                            else:
+                                classes_set = {"Toutes classes"}
+                        
+                        formatted_events[event['date']] = {
+                            "name": event['nom'],
+                            "classes": list(classes_set),
+                            "status": status,
+                            "participants_count": len(participants) if isinstance(participants, dict) else 0
+                        }
+                    except Exception as e:
+                        print(f"Erreur parsing événement: {e}")
+                        continue
+            
+            return formatted_events
+            
+        except Exception as e:
+            print(f"Erreur récupération événements: {e}")
+            return {}
+
     def _create_welcome_section(self):
         """Crée la section de bienvenue"""
         welcome_frame = self.styles.create_header_frame(self.frame, padding="20")
@@ -88,13 +136,24 @@ class HomeView:
         cards_container = ttk.Frame(stats_frame)
         cards_container.pack(fill="x")
         
-        # Calculer les stats dynamiques
-        total_events = len(self.events_data)
-        upcoming_events = len([e for e in self.events_data.values() if e["status"] == "à venir"])
-        total_classes = len(set(classe for event in self.events_data.values() for classe in event["classes"]))
+        # Calculer les stats dynamiques avec les vraies données
+        events_data = self._get_real_events_data()
+        students_data = get_students_data_source()
+        
+        total_students = len(students_data) if students_data else 0
+        total_events = len(events_data)
+        upcoming_events = len([e for e in events_data.values() if e["status"] == "à venir"])
+        
+        # Classes concernées (uniques)
+        all_classes = set()
+        for event in events_data.values():
+            all_classes.update(event["classes"])
+        # Enlever "Toutes classes" du comptage
+        all_classes.discard("Toutes classes")
+        total_classes = len(all_classes) if all_classes else len(set([s.get('classe', '') for s in students_data if s.get('classe')]))
         
         # Cartes de statistiques
-        self._create_stat_card(cards_container, "👥 Élèves", "48", "Total inscrits", 0)
+        self._create_stat_card(cards_container, "👥 Élèves", str(total_students), "Total inscrits", 0)
         self._create_stat_card(cards_container, "📅 Événements", str(upcoming_events), "À venir", 1)
         self._create_stat_card(cards_container, "🏫 Classes", str(total_classes), "Classes concernées", 2)
         self._create_stat_card(cards_container, "📈 Total", str(total_events), "Événements planifiés", 3)
@@ -167,9 +226,12 @@ class HomeView:
         current_month = datetime.now().month
         current_year = datetime.now().year
         
+        # Récupérer les vrais événements
+        events_data = self._get_real_events_data()
+        
         # Filtrer les événements du mois courant
         monthly_events = []
-        for date_str, event in self.events_data.items():
+        for date_str, event in events_data.items():
             event_date = datetime.strptime(date_str, "%Y-%m-%d")
             if event_date.month == current_month and event_date.year == current_year:
                 monthly_events.append((date_str, event))
@@ -213,7 +275,6 @@ class HomeView:
                 # Date et statut
                 date_formatted = event_date.strftime("%d/%m")
                 status_emoji = {"passé": "✅", "aujourd'hui": "🔥", "à venir": "⏳"}
-                status_color = {"passé": "gray", "aujourd'hui": "red", "à venir": "blue"}
                 
                 header_frame = ttk.Frame(event_frame)
                 header_frame.pack(fill="x")
@@ -243,11 +304,13 @@ class HomeView:
                 )
                 event_name_label.pack(anchor="w")
                 
-                # Classes concernées
-                classes_text = ", ".join(event["classes"])
+                # Classes concernées et participants
+                classes_text = ", ".join(event["classes"]) if event["classes"] else "Toutes classes"
+                participants_text = f" • {event['participants_count']} participants" if event['participants_count'] > 0 else ""
+                
                 classes_label = ttk.Label(
                     event_frame,
-                    text=f"🏫 Classes: {classes_text}",
+                    text=f"🏫 Classes: {classes_text}{participants_text}",
                     style="Small.TLabel"
                 )
                 classes_label.pack(anchor="w")
@@ -318,6 +381,9 @@ class HomeView:
         for widget in self.calendar_frame.winfo_children():
             widget.destroy()
         
+        # Récupérer les vrais événements
+        events_data = self._get_real_events_data()
+        
         # Mettre à jour le titre
         month_names = [
             "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -355,18 +421,18 @@ class HomeView:
                 else:
                     # Vérifier s'il y a un événement ce jour
                     date_str = f"{self.current_date.year:04d}-{self.current_date.month:02d}-{day:02d}"
-                    has_event = date_str in self.events_data
+                    has_event = date_str in events_data
                     
                     # Couleur selon le statut
-                    bg_color = self.styles.colors['white']
+                    bg_color = self.styles.colors.get('white', '#ffffff')
                     if has_event:
-                        event_status = self.events_data[date_str]["status"]
+                        event_status = events_data[date_str]["status"]
                         if event_status == "passé":
-                            bg_color = self.styles.colors['light_gray']
+                            bg_color = self.styles.colors.get('light_gray', '#E0E0E0')
                         elif event_status == "aujourd'hui":
-                            bg_color = self.styles.colors['warning']
+                            bg_color = self.styles.colors.get('warning', '#FFE082')
                         else:  # à venir
-                            bg_color = self.styles.colors['light_blue']
+                            bg_color = self.styles.colors.get('light_blue', '#BBDEFB')
                     
                     # Créer la case du jour
                     day_frame = tk.Frame(
@@ -386,14 +452,16 @@ class HomeView:
                         text=str(day),
                         bg=bg_color,
                         font=("Arial", 9, "bold" if has_event else "normal"),
-                        fg=self.styles.colors['dark_blue'] if has_event else self.styles.colors['text_gray']
+                        fg=self.styles.colors.get('dark_blue', '#2E86AB') if has_event else self.styles.colors.get('text_gray', '#666666')
                     )
                     day_label.pack(expand=True)
                     
                     # Tooltip pour les événements
                     if has_event:
-                        event = self.events_data[date_str]
-                        tooltip_text = f"{event['name']}\nClasses: {', '.join(event['classes'])}"
+                        event = events_data[date_str]
+                        participants_info = f"\nParticipants: {event['participants_count']}" if event['participants_count'] > 0 else ""
+                        classes_info = ', '.join(event['classes']) if event['classes'] else 'Toutes classes'
+                        tooltip_text = f"{event['name']}\nClasses: {classes_info}{participants_info}"
                         self._create_tooltip(day_frame, tooltip_text)
         
         # Configuration des lignes
@@ -410,8 +478,8 @@ class HomeView:
             label = tk.Label(
                 tooltip,
                 text=text,
-                background=self.styles.colors['dark_blue'],
-                foreground=self.styles.colors['white'],
+                background=self.styles.colors.get('dark_blue', '#2E86AB'),
+                foreground=self.styles.colors.get('white', '#ffffff'),
                 font=("Arial", 8),
                 relief="solid",
                 borderwidth=1,
@@ -492,9 +560,9 @@ class HomeView:
         legend_label.pack(side="left")
         
         legend_items = [
-            ("⬜ Passé", self.styles.colors['light_gray']),
-            ("🟦 À venir", self.styles.colors['light_blue']),
-            ("🟨 Aujourd'hui", self.styles.colors['warning'])
+            ("⬜ Passé", self.styles.colors.get('light_gray', '#E0E0E0')),
+            ("🟦 À venir", self.styles.colors.get('light_blue', '#BBDEFB')),
+            ("🟨 Aujourd'hui", self.styles.colors.get('warning', '#FFE082'))
         ]
         
         for text, color in legend_items:

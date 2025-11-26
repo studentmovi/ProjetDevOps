@@ -25,6 +25,7 @@ class StudentView:
         self.year_combo = None
         self.class_combo = None
         self.event_combo = None
+        self.month_combo = None  # NOUVEAU: Filtre par mois
         self.sort_combo = None
         
         # Conteneurs pour l'affichage
@@ -68,6 +69,8 @@ class StudentView:
                 self.class_combo.set("Toutes")
             if self.event_combo:
                 self.event_combo.set("Tous")
+            if self.month_combo:
+                self.month_combo.set("Tous")
             if self.sort_combo:
                 self.sort_combo.set("Nom A-Z")
             
@@ -76,7 +79,7 @@ class StudentView:
             print(f"Erreur initialisation filtres: {e}")
     
     def _create_toolbar(self):
-        """Crée la barre d'outils simplifiée - MODIFIÉ"""
+        """Crée la barre d'outils simplifiée"""
         self.toolbar_frame = ttk.LabelFrame(
             self.frame, 
             text="⚙️ Actions Rapides", 
@@ -100,7 +103,7 @@ class StudentView:
         )
         import_excel_btn.pack(side="left")
         
-        # Groupe Actions d'événements à droite - RÉDUIT
+        # Groupe Actions d'événements à droite
         events_frame = ttk.Frame(buttons_frame)
         events_frame.pack(side="right")
         
@@ -121,7 +124,7 @@ class StudentView:
         calculate_cost_btn.pack(side="left")
     
     def _create_filter_panel(self):
-        """Crée un panneau de filtres avec tous les boutons - MODIFIÉ"""
+        """Crée un panneau de filtres avec tous les boutons"""
         filter_frame = ttk.LabelFrame(
             self.frame, 
             text="🔍 Filtres", 
@@ -142,14 +145,14 @@ class StudentView:
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=20, font=("Arial", 9))
         self.search_entry.pack(side="left", padx=(0, 10))
         
-        # Tri
+        # Tri - MODIFIÉ avec option Date
         sort_frame = ttk.Frame(row1)
         sort_frame.pack(side="right")
         
         ttk.Label(sort_frame, text="Tri", font=("Arial", 10)).pack(side="left", padx=(0, 3))
         self.sort_combo = ttk.Combobox(
             sort_frame, 
-            values=["Nom A-Z", "Nom Z-A", "Classe", "Année"], 
+            values=["Nom A-Z", "Nom Z-A", "Classe", "Année", "Date (Mois)"], 
             state="readonly", 
             width=12,
             font=("Arial", 9)
@@ -157,7 +160,7 @@ class StudentView:
         self.sort_combo.set("Nom A-Z")
         self.sort_combo.pack(side="left")
         
-        # LIGNE 2: FILTRES PRINCIPAUX + ÉVÉNEMENT
+        # LIGNE 2: FILTRES PRINCIPAUX + ÉVÉNEMENT + MOIS
         row2 = ttk.Frame(filter_frame)
         row2.pack(fill="x", pady=(3, 0))
         
@@ -166,14 +169,14 @@ class StudentView:
         
         # Année
         year_frame = ttk.Frame(filters_container)
-        year_frame.pack(side="left", padx=(0, 12))
+        year_frame.pack(side="left", padx=(0, 8))
         
         ttk.Label(year_frame, text="Année", font=("Arial", 9)).pack(side="left", padx=(0, 2))
         self.year_combo = ttk.Combobox(
             year_frame, 
             values=["Toutes", "1ère", "2ème", "3ème", "4ème", "5ème", "6ème"], 
             state="readonly", 
-            width=8,
+            width=7,
             font=("Arial", 9)
         )
         self.year_combo.set("Toutes")
@@ -181,35 +184,72 @@ class StudentView:
         
         # Classe
         class_frame = ttk.Frame(filters_container)
-        class_frame.pack(side="left", padx=(0, 12))
+        class_frame.pack(side="left", padx=(0, 8))
         
         ttk.Label(class_frame, text="Classe", font=("Arial", 9)).pack(side="left", padx=(0, 2))
         self.class_combo = ttk.Combobox(
             class_frame, 
             values=["Toutes", "1A", "1B", "2A", "2B", "3A", "3B", "3C", "4A", "4B", "5A", "5B", "5C", "6A", "6B", "6C"], 
             state="readonly", 
-            width=8,
+            width=7,
             font=("Arial", 9)
         )
         self.class_combo.set("Toutes")
         self.class_combo.pack(side="left")
         
-        # Filtre par événement
+        # Événement
         event_frame = ttk.Frame(filters_container)
-        event_frame.pack(side="left", padx=(0, 12))
+        event_frame.pack(side="left", padx=(0, 8))
         
         ttk.Label(event_frame, text="Événement", font=("Arial", 9)).pack(side="left", padx=(0, 2))
         self.event_combo = ttk.Combobox(
             event_frame, 
             values=["Tous", "Sortie Théâtre", "Visite Musée", "Concert", "Voyage Paris"], 
             state="readonly", 
-            width=12,
+            width=10,
             font=("Arial", 9)
         )
         self.event_combo.set("Tous")
         self.event_combo.pack(side="left")
         
-        # LIGNE 3: BOUTONS D'ACTION - NOUVEAU
+        # NOUVEAU: Filtre par Mois
+        month_frame = ttk.Frame(filters_container)
+        month_frame.pack(side="left", padx=(0, 8))
+        
+        ttk.Label(month_frame, text="Mois", font=("Arial", 9)).pack(side="left", padx=(0, 2))
+        self.month_combo = ttk.Combobox(
+            month_frame, 
+            values=["Tous"], 
+            state="readonly", 
+            width=10,
+            font=("Arial", 9)
+        )
+        self.month_combo.set("Tous")
+        self.month_combo.pack(side="left")
+        
+        # Boutons d'action à droite - plus compacts
+        actions_frame = ttk.Frame(row2)
+        actions_frame.pack(side="right")
+        
+        reset_btn = ttk.Button(
+            actions_frame,
+            text="🔄 Reset",
+            command=self._safe_reset_filters,
+            style="Light.TButton",
+            width=6
+        )
+        reset_btn.pack(side="left", padx=(0, 3))
+        
+        export_btn = ttk.Button(
+            actions_frame,
+            text="📤 Export",
+            command=self._safe_export_data,
+            style="Secondary.TButton",
+            width=6
+        )
+        export_btn.pack(side="left")
+        
+        # LIGNE 3: BOUTONS DE SÉLECTION
         row3 = ttk.Frame(filter_frame)
         row3.pack(fill="x", pady=(6, 0))
         
@@ -240,29 +280,7 @@ class StudentView:
             command=self._on_refresh,
             style="Secondary.TButton"
         )
-        refresh_btn.pack(side="left", padx=(0, 5))
-        
-        # Boutons d'action à droite
-        actions_frame = ttk.Frame(row3)
-        actions_frame.pack(side="right")
-        
-        reset_btn = ttk.Button(
-            actions_frame,
-            text="🔄 Reset",
-            command=self._safe_reset_filters,
-            style="Light.TButton",
-            width=8
-        )
-        reset_btn.pack(side="left", padx=(0, 5))
-        
-        export_btn = ttk.Button(
-            actions_frame,
-            text="📤 Export",
-            command=self._safe_export_data,
-            style="Secondary.TButton",
-            width=8
-        )
-        export_btn.pack(side="left")
+        refresh_btn.pack(side="left")
         
         self._setup_filter_bindings()
     
@@ -277,23 +295,33 @@ class StudentView:
                 self.class_combo.bind('<<ComboboxSelected>>', self._safe_on_filter_changed)
             if self.event_combo:
                 self.event_combo.bind('<<ComboboxSelected>>', self._safe_on_filter_changed)
+            if self.month_combo:  # NOUVEAU
+                self.month_combo.bind('<<ComboboxSelected>>', self._safe_on_filter_changed)
             if self.sort_combo:
                 self.sort_combo.bind('<<ComboboxSelected>>', self._safe_on_sort_changed)
                 
             self._setup_search_placeholder()
-            self._load_event_filter_options()
+            self._load_filter_options()
             
         except Exception as e:
             print(f"Erreur bindings: {e}")
     
-    def _load_event_filter_options(self):
-        """Charge les options de filtre événement depuis le contrôleur"""
-        if self.controller and self.event_combo:
+    def _load_filter_options(self):
+        """Charge les options de filtres depuis le contrôleur"""
+        if self.controller:
             try:
-                events = self.controller.get_events_for_filter()
-                self.event_combo.configure(values=events)
+                # Événements
+                if self.event_combo:
+                    events = self.controller.get_events_for_filter()
+                    self.event_combo.configure(values=events)
+                
+                # Mois - NOUVEAU
+                if self.month_combo:
+                    months = self.controller.get_months_for_filter()
+                    self.month_combo.configure(values=months)
+                    
             except Exception as e:
-                print(f"Erreur chargement événements: {e}")
+                print(f"Erreur chargement options filtres: {e}")
     
     def _setup_search_placeholder(self):
         """Configure le placeholder pour la recherche"""
@@ -312,7 +340,7 @@ class StudentView:
         self.search_entry.bind('<FocusOut>', on_focus_out)
     
     def _create_main_content(self):
-        """Crée la zone principale avec Treeview - COLONNES AJUSTÉES"""
+        """Crée la zone principale avec Treeview"""
         main_frame = ttk.Frame(self.frame)
         main_frame.pack(fill="both", expand=True, pady=(0, 8))
         
@@ -332,16 +360,16 @@ class StudentView:
         
         self.treeview.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
         
-        # Configuration des colonnes - AJUSTÉES selon vos demandes
+        # Configuration des colonnes
         self.treeview.column("#0", width=25, minwidth=25, stretch=False)
         self.treeview.column("selection", width=40, minwidth=40, stretch=False, anchor="center")
         self.treeview.column("nom", width=120, minwidth=100, stretch=True)
         self.treeview.column("prenom", width=120, minwidth=100, stretch=True)
-        self.treeview.column("classe", width=50, minwidth=45, stretch=False)  # RÉDUIT
+        self.treeview.column("classe", width=50, minwidth=45, stretch=False)
         self.treeview.column("annee", width=70, minwidth=60, stretch=False)
         self.treeview.column("option", width=100, minwidth=80, stretch=False)
-        self.treeview.column("evenements", width=200, minwidth=150, stretch=True)
-        self.treeview.column("actions", width=200, minwidth=180, stretch=False)  # AUGMENTÉ
+        self.treeview.column("evenements", width=250, minwidth=200, stretch=True)  # AUGMENTÉ
+        self.treeview.column("actions", width=200, minwidth=180, stretch=False)
         
         # En-têtes
         self.treeview.heading("#0", text="", anchor="w")
@@ -392,52 +420,110 @@ class StudentView:
         self.status_label.pack(side="left", fill="x", expand=True)
     
     def _format_events_display(self, events_list):
-        """Formate l'affichage des événements - NOUVEAU"""
+        """Formate l'affichage des événements - AMÉLIORÉ"""
         if not events_list or len(events_list) == 0:
             return "Aucun événement"
         elif len(events_list) == 1:
             return events_list[0]
+        elif len(events_list) <= 3:
+            return " • ".join(events_list)
         else:
-            # Si plusieurs événements, afficher le premier + compteur
-            return f"{events_list[0]} (+{len(events_list)-1} autres)"
+            # Plus de 3 événements : afficher les 2 premiers + compteur
+            return f"{events_list[0]} • {events_list[1]} (+{len(events_list)-2} autres)"
     
     def _create_events_popup(self, events_list, x, y):
-        """Crée un popup pour afficher tous les événements - NOUVEAU"""
-        if len(events_list) <= 1:
+        """Crée un popup pour afficher tous les événements"""
+        if len(events_list) <= 3:
             return
         
         popup = tk.Toplevel(self.treeview)
         popup.wm_overrideredirect(True)
-        popup.configure(bg="lightyellow", relief="solid", borderwidth=1)
+        popup.configure(bg="#f9f9f9", relief="solid", borderwidth=1)
         
         # Positionner le popup
-        popup.geometry(f"+{x}+{y}")
+        popup.geometry(f"+{x+10}+{y+10}")
         
         # Titre
-        title_label = tk.Label(popup, text="Événements assignés:", 
+        title_label = tk.Label(popup, text="📅 Tous les événements:", 
                               font=("Arial", 9, "bold"), 
-                              bg="lightyellow")
-        title_label.pack(padx=5, pady=(5, 2))
+                              bg="#f9f9f9", fg="#333")
+        title_label.pack(padx=8, pady=(6, 3))
         
-        # Liste des événements
-        for event in events_list:
-            event_label = tk.Label(popup, text=f"• {event}", 
-                                  font=("Arial", 8), 
-                                  bg="lightyellow")
-            event_label.pack(anchor="w", padx=10, pady=1)
+        # Liste des événements avec scroll si nécessaire
+        max_height = min(len(events_list), 8)  # Maximum 8 événements visibles
         
-        # Fermer automatiquement après 3 secondes
-        popup.after(3000, popup.destroy)
+        if len(events_list) > 8:
+            # Frame avec scrollbar pour beaucoup d'événements
+            list_frame = tk.Frame(popup, bg="#f9f9f9")
+            list_frame.pack(padx=8, pady=3)
+            
+            canvas = tk.Canvas(list_frame, bg="#f9f9f9", width=200, height=150, highlightthickness=0)
+            scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=canvas.yview)
+            scrollable_frame = tk.Frame(canvas, bg="#f9f9f9")
+            
+            scrollable_frame.bind(
+                "<Configure>",
+                lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            
+            for i, event in enumerate(events_list):
+                event_label = tk.Label(scrollable_frame, text=f"• {event}", 
+                                      font=("Arial", 8), 
+                                      bg="#f9f9f9", fg="#555",
+                                      anchor="w")
+                event_label.pack(fill="x", padx=5, pady=1)
+            
+            canvas.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
+        else:
+            # Affichage simple pour peu d'événements
+            for i, event in enumerate(events_list):
+                event_label = tk.Label(popup, text=f"• {event}", 
+                                      font=("Arial", 8), 
+                                      bg="#f9f9f9", fg="#555",
+                                      anchor="w")
+                event_label.pack(fill="x", padx=10, pady=1)
+        
+        # Note en bas
+        note_label = tk.Label(popup, text="(Cliquez pour fermer)", 
+                             font=("Arial", 7, "italic"), 
+                             bg="#f9f9f9", fg="#888")
+        note_label.pack(pady=(3, 6))
+        
+        # Fermer automatiquement après 5 secondes
+        popup.after(5000, popup.destroy)
         
         # Fermer si on clique ailleurs
-        def close_popup(event):
-            popup.destroy()
+        def close_popup(event=None):
+            try:
+                popup.destroy()
+            except:
+                pass
         
         popup.bind("<Button-1>", close_popup)
         popup.bind("<FocusOut>", close_popup)
+        
+        # Centrer mieux le popup
+        popup.update_idletasks()
+        popup_width = popup.winfo_width()
+        popup_height = popup.winfo_height()
+        
+        # Ajuster si le popup sort de l'écran
+        screen_width = popup.winfo_screenwidth()
+        screen_height = popup.winfo_screenheight()
+        
+        if x + popup_width > screen_width:
+            x = screen_width - popup_width - 10
+        if y + popup_height > screen_height:
+            y = screen_height - popup_height - 10
+            
+        popup.geometry(f"+{x}+{y}")
     
     def update_display(self):
-        """Met à jour l'affichage de la liste des étudiants - MODIFIÉ"""
+        """Met à jour l'affichage de la liste des étudiants"""
         if not self.controller:
             if self.status_label:
                 self.status_label.config(text="❌ Erreur: Contrôleur non initialisé")
@@ -467,14 +553,9 @@ class StudentView:
                     # Icône de sélection
                     selection_icon = "☑️" if student_id in selected_students else "☐"
                     
-                    # Événements - AMÉLIORATION DE L'AFFICHAGE
-                    events_text = self.controller.get_student_events(student)
-                    if events_text == "Aucun":
-                        formatted_events = "Aucun événement"
-                    else:
-                        # Séparer les événements
-                        events_list = [e.strip() for e in events_text.split(',') if e.strip()]
-                        formatted_events = self._format_events_display(events_list)
+                    # Événements - AMÉLIORÉ avec dates
+                    events_list = self.controller.get_student_events(student)
+                    formatted_events = self._format_events_display(events_list)
                     
                     # Actions avec plus d'espace
                     actions_text = "👁️ Voir détails | 🗑️ Supprimer"
@@ -504,8 +585,7 @@ class StudentView:
                     )
                     
                     # Stocker la liste complète des événements pour le popup
-                    if events_text != "Aucun":
-                        events_list = [e.strip() for e in events_text.split(',') if e.strip()]
+                    if events_list:
                         setattr(self.treeview, f"events_{student_id}", events_list)
                     
                 except Exception as e:
@@ -532,7 +612,7 @@ class StudentView:
             if self.status_label:
                 self.status_label.config(text=f"❌ Erreur: {e}")
     
-    # ========== GESTION DES CLICS - MODIFIÉ ==========
+    # ========== GESTION DES CLICS ==========
     def _on_treeview_click(self, event):
         """Gère les clics sur le treeview"""
         item = self.treeview.identify_row(event.y)
@@ -544,11 +624,10 @@ class StudentView:
             # Clic sur la colonne de sélection
             if column == "#1":  # Colonne selection
                 self._toggle_student_selection(student_id)
-            # Clic sur la colonne événements - NOUVEAU
+            # Clic sur la colonne événements - AMÉLIORÉ
             elif column == "#7":  # Colonne événements
                 events_list = getattr(self.treeview, f"events_{student_id}", None)
-                if events_list and len(events_list) > 1:
-                    # Calculer la position pour le popup
+                if events_list and len(events_list) > 3:  # Popup si plus de 3 événements
                     x = event.x_root
                     y = event.y_root
                     self._create_events_popup(events_list, x, y)
@@ -593,7 +672,6 @@ class StudentView:
         if self.controller:
             try:
                 self.controller.select_all()
-                # Enlever le messagebox pour une meilleure UX
                 print("Tous les étudiants sélectionnés")
             except Exception as e:
                 messagebox.showerror("❌ Erreur", f"Erreur sélection: {e}")

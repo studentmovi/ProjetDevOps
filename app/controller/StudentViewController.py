@@ -1,7 +1,6 @@
 import tkinter as tk
 import tkinter.messagebox
-import sys
-import os
+from datetime import datetime
 
 # Import des données depuis sample_data.py
 from data.sample_data import get_students_data_source, get_available_classes, get_available_years
@@ -28,13 +27,7 @@ class StudentViewController:
     
     # ====================== GESTION DES DONNÉES ======================
     def get_students_data(self):
-        """
-        Retourne les données des élèves (Excel si disponible, sinon JSON)
-        
-        Returns:
-            list: Liste des élèves
-        """
-        # Vérifier d'abord si des données Excel sont disponibles
+        """Retourne les données des élèves (Excel si disponible, sinon JSON)"""
         excel_students, is_excel = self.excel_controller.get_students_data()
         
         if is_excel and excel_students:
@@ -42,7 +35,6 @@ class StudentViewController:
             return excel_students
         else:
             self._use_excel_data = False
-            # Retourner les données JSON par défaut
             return self.students_data
     
     def get_filtered_students(self):
@@ -85,11 +77,9 @@ class StudentViewController:
     def refresh_data(self):
         """Actualise les données"""
         if self._use_excel_data:
-            # Si on utilise des données Excel, on garde ces données
             current_data = self.get_students_data()
             self.students_data = current_data
         else:
-            # Sinon on recharge depuis les sources JSON
             self.students_data = get_students_data_source()
         
         self.apply_all_filters()
@@ -118,7 +108,6 @@ class StudentViewController:
             self._use_excel_data = False
             self.students_data = get_students_data_source()
             self.apply_all_filters()
-            # Notifier la vue pour qu'elle se rafraîchisse
             if hasattr(self.view, 'refresh_view'):
                 self.view.refresh_view()
             tkinter.messagebox.showinfo("Données JSON", "Retour aux données JSON par défaut")
@@ -135,13 +124,54 @@ class StudentViewController:
         except:
             return ["Tous", "Sortie Théâtre", "Visite Musée", "Concert", "Voyage Paris"]
     
+    def get_months_for_filter(self):
+        """Récupère la liste des mois disponibles pour le filtrage"""
+        try:
+            events = self.event_manager.get_events()
+            months = set()
+            for event in events.values():
+                if 'date' in event:
+                    event_date = datetime.strptime(event['date'], '%Y-%m-%d')
+                    month_year = event_date.strftime('%B %Y')
+                    months.add(month_year)
+            return ["Tous"] + sorted(list(months))
+        except Exception as e:
+            print(f"Erreur récupération mois: {e}")
+            current_month = datetime.now().strftime('%B %Y')
+            return ["Tous", current_month]
+    
     def get_classes_for_event(self, event_name):
         """Récupère les classes concernées par un événement"""
-        # Placeholder - à implémenter selon la logique métier
         return get_available_classes()
     
     def get_student_events(self, student):
-        """Retourne les événements d'un élève"""
+        """Retourne les événements d'un élève avec leurs dates"""
+        try:
+            student_events = self.event_manager.get_student_events(student["id"])
+            if student_events:
+                events_info = []
+                for event_id in student_events:
+                    event = self.event_manager.get_event(event_id)
+                    if event:
+                        event_name = event["nom"]
+                        event_date = event.get('date', '')
+                        if event_date:
+                            try:
+                                date_obj = datetime.strptime(event_date, '%Y-%m-%d')
+                                formatted_date = date_obj.strftime('%d/%m')
+                                events_info.append(f"{event_name} ({formatted_date})")
+                            except:
+                                events_info.append(event_name)
+                        else:
+                            events_info.append(event_name)
+                return events_info
+            return []
+        except Exception as e:
+            print(f"Erreur récupération événements pour {student.get('id', 'N/A')}: {e}")
+            return []
+    
+    def get_student_events_names_only(self, student):
+        """Retourne seulement les noms des événements d'un élève"""
         try:
             student_events = self.event_manager.get_student_events(student["id"])
             if student_events:
@@ -150,10 +180,10 @@ class StudentViewController:
                     event = self.event_manager.get_event(event_id)
                     if event:
                         events_names.append(event["nom"])
-                return ", ".join(events_names)
-            return "Aucun"
+                return events_names
+            return []
         except:
-            return "Aucun"
+            return []
     
     # ====================== GESTION DES FILTRES ======================
     def apply_all_filters(self):
@@ -169,21 +199,21 @@ class StudentViewController:
             selected_month = selected_month.get() if selected_month else "Tous"
             sort_type = self.view.sort_combo.get() if hasattr(self.view, 'sort_combo') else "Nom A-Z"
             
-            print(f"Filtres: année={selected_year}, classe={selected_class}, événement={selected_event}, tri={sort_type}")
+            print(f"Filtres: année={selected_year}, classe={selected_class}, événement={selected_event}, mois={selected_month}, tri={sort_type}")
             
             # Recherche
             search_text = ""
             if hasattr(self.view, 'search_entry') and hasattr(self.view, 'search_var'):
                 search_value = self.view.search_var.get()
-                # Correction: utiliser le bon placeholder
-                if search_value and search_value not in ["", "Rechercher par nom ou prénom..."]:
+                if search_value and search_value not in ["", "Nom, prénom..."]:
                     search_text = search_value.lower()
                     print(f"Recherche: '{search_text}'")
         except Exception as e:
             print(f"Erreur récupération filtres: {e}")
             selected_year = "Toutes"
             selected_class = "Toutes"
-            selected_event = "Aucun"
+            selected_event = "Tous"
+            selected_month = "Tous"
             sort_type = "Nom A-Z"
             search_text = ""
         
@@ -195,7 +225,7 @@ class StudentViewController:
         self.filtered_students = []
         
         for student in current_data:
-            # Filtre par année - adaptation pour les données Excel
+            # Filtre par année
             if selected_year != "Toutes":
                 filter_year = selected_year.replace("ère", "").replace("ème", "").replace("e", "")
                 student_year = str(student.get("annee", ""))
@@ -209,8 +239,26 @@ class StudentViewController:
             
             # Filtre par événement
             if selected_event != "Tous":
-                student_events_str = self.get_student_events(student)
-                if selected_event not in student_events_str:
+                student_events_names = self.get_student_events_names_only(student)
+                if selected_event not in student_events_names:
+                    continue
+            
+            # Filtre par mois
+            if selected_month != "Tous":
+                student_has_event_in_month = False
+                student_events = self.event_manager.get_student_events(student["id"])
+                for event_id in student_events:
+                    event = self.event_manager.get_event(event_id)
+                    if event and 'date' in event:
+                        try:
+                            event_date = datetime.strptime(event['date'], '%Y-%m-%d')
+                            event_month_year = event_date.strftime('%B %Y')
+                            if event_month_year == selected_month:
+                                student_has_event_in_month = True
+                                break
+                        except:
+                            continue
+                if not student_has_event_in_month:
                     continue
             
             # Filtre par recherche
@@ -232,6 +280,22 @@ class StudentViewController:
             self.filtered_students.sort(key=lambda x: (int(x.get("annee", 0)), x.get("classe", "")))
         elif sort_type == "Année":
             self.filtered_students.sort(key=lambda x: int(x.get("annee", 0)))
+        elif sort_type == "Date (Mois)":
+            # Tri par date du prochain événement
+            def get_next_event_date(student):
+                events = self.event_manager.get_student_events(student["id"])
+                dates = []
+                for event_id in events:
+                    event = self.event_manager.get_event(event_id)
+                    if event and 'date' in event:
+                        try:
+                            date_obj = datetime.strptime(event['date'], '%Y-%m-%d')
+                            dates.append(date_obj)
+                        except:
+                            continue
+                return min(dates) if dates else datetime.max
+            
+            self.filtered_students.sort(key=get_next_event_date)
         
         print(f"Après tri: {len(self.filtered_students)} élèves")
         
@@ -249,7 +313,6 @@ class StudentViewController:
                 available_classes = ["Toutes"] + get_available_classes()
             else:
                 year_number = selected_year.replace("ère", "").replace("ème", "").replace("e", "")
-                # Filtrer les classes selon l'année
                 all_classes = get_available_classes()
                 available_classes = ["Toutes"] + [c for c in all_classes if c.startswith(year_number)]
             
@@ -286,6 +349,10 @@ class StudentViewController:
                 events = self.get_events_for_filter()
                 self.view.event_combo.configure(values=events)
                 self.view.event_combo.set("Tous")
+            if hasattr(self.view, 'month_combo'):
+                months = self.get_months_for_filter()
+                self.view.month_combo.configure(values=months)
+                self.view.month_combo.set("Tous")
             if hasattr(self.view, 'search_var'):
                 self.view.search_var.set("")
             if hasattr(self.view, 'sort_combo'):
@@ -323,7 +390,7 @@ class StudentViewController:
         self.selected_students = []
         self.view.update_display()
     
-    # ====================== POPUPS (délégués aux classes spécialisées) ======================
+    # ====================== POPUPS ======================
     def assign_to_event(self):
         """Ouvre le popup d'assignation d'événement"""
         if not self.selected_students:
@@ -351,6 +418,8 @@ class StudentViewController:
         student = next((s for s in current_data if s["id"] == student_id), None)
         
         if student:
+            events_info = self.get_student_events(student)
+            
             info = f"Nom: {student['nom']}\n"
             info += f"Prénom: {student['prenom']}\n"
             info += f"Classe: {student['classe']}\n"
@@ -359,9 +428,13 @@ class StudentViewController:
             if 'email' in student:
                 info += f"Email: {student['email']}\n"
             
-            info += f"Événements: {self.get_student_events(student)}\n"
+            if events_info:
+                info += f"Événements:\n"
+                for event in events_info:
+                    info += f"  • {event}\n"
+            else:
+                info += "Événements: Aucun\n"
             
-            # Indication de la source des données
             source = "Excel" if self.is_using_excel_data() else "JSON"
             info += f"\nSource: {source}"
             
