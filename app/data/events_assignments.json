@@ -3,9 +3,19 @@
     "sortie_theatre": {
       "id": "sortie_theatre",
       "nom": "Sortie Théâtre",
-      "date": "15/11/2024",
+      "date": "2025-11-15",
+      "mois": "Novembre 2025",
       "cout_total": 450.0,
-      "participants": {},
+      "participants": {
+        "1": {"prix_base": 56.25, "prix_final": 56.25},
+        "2": {"prix_base": 56.25, "prix_final": 56.25},
+        "3": {"prix_base": 56.25, "prix_final": 56.25},
+        "17": {"prix_base": 56.25, "prix_final": 56.25},
+        "25": {"prix_base": 56.25, "prix_final": 56.25},
+        "33": {"prix_base": 56.25, "prix_final": 56.25},
+        "41": {"prix_base": 56.25, "prix_final": 56.25},
+        "42": {"prix_base": 56.25, "prix_final": 56.25}
+      },
       "description": "Sortie au théâtre municipal",
       "ventes_activees": false,
       "total_ventes": 0.0
@@ -13,9 +23,19 @@
     "visite_musee": {
       "id": "visite_musee",
       "nom": "Visite Musée",
-      "date": "20/11/2024",
+      "date": "2025-11-20",
+      "mois": "Novembre 2025",
       "cout_total": 320.0,
-      "participants": {},
+      "participants": {
+        "1": {"prix_base": 40.0, "prix_final": 40.0},
+        "17": {"prix_base": 40.0, "prix_final": 40.0},
+        "25": {"prix_base": 40.0, "prix_final": 40.0},
+        "33": {"prix_base": 40.0, "prix_final": 40.0},
+        "41": {"prix_base": 40.0, "prix_final": 40.0},
+        "5": {"prix_base": 40.0, "prix_final": 40.0},
+        "18": {"prix_base": 40.0, "prix_final": 40.0},
+        "42": {"prix_base": 40.0, "prix_final": 40.0}
+      },
       "description": "Visite du musée d'histoire",
       "ventes_activees": false,
       "total_ventes": 0.0
@@ -23,63 +43,80 @@
     "concert": {
       "id": "concert",
       "nom": "Concert",
-      "date": "25/11/2024",
+      "date": "2025-11-25",
+      "mois": "Novembre 2025",
       "cout_total": 600.0,
       "participants": {
-        "1": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        },
-        "2": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        },
-        "3": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        },
-        "4": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        },
-        "5": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        },
-        "6": {
-          "vente": 0.0,
-          "prix_final": 88.75,
-          "prix_base": 100.0
-        }
+        "1": {"prix_base": 100.0, "prix_final": 88.75},
+        "2": {"prix_base": 100.0, "prix_final": 88.75},
+        "3": {"prix_base": 100.0, "prix_final": 88.75},
+        "4": {"prix_base": 100.0, "prix_final": 88.75},
+        "5": {"prix_base": 100.0, "prix_final": 88.75},
+        "6": {"prix_base": 100.0, "prix_final": 88.75}
       },
       "description": "Concert de musique classique",
       "ventes_activees": true,
       "total_ventes": 67.5
+    },
+    "voyage_paris": {
+      "id": "voyage_paris",
+      "nom": "Voyage Paris",
+      "date": "2025-12-10",
+      "mois": "Décembre 2025",
+      "cout_total": 1200.0,
+      "participants": {
+        "17": {"prix_base": 200.0, "prix_final": 200.0},
+        "18": {"prix_base": 200.0, "prix_final": 200.0},
+        "33": {"prix_base": 200.0, "prix_final": 200.0},
+        "41": {"prix_base": 200.0, "prix_final": 200.0},
+        "42": {"prix_base": 200.0, "prix_final": 200.0},
+        "25": {"prix_base": 200.0, "prix_final": 200.0}
+      },
+      "description": "Voyage scolaire à Paris - 3 jours",
+      "ventes_activees": false,
+      "total_ventes": 0.0
+    },
+    "excursion_bruxelles": {
+      "id": "excursion_bruxelles",
+      "nom": "Excursion Bruxelles",
+      "date": "2025-12-05",
+      "mois": "Décembre 2025",
+      "cout_total": 280.0,
+      "participants": {
+        "9": {"prix_base": 35.0, "prix_final": 35.0},
+        "10": {"prix_base": 35.0, "prix_final": 35.0},
+        "11": {"prix_base": 35.0, "prix_final": 35.0},
+        "12": {"prix_base": 35.0, "prix_final": 35.0},
+        "13": {"prix_base": 35.0, "prix_final": 35.0},
+        "14": {"prix_base": 35.0, "prix_final": 35.0},
+        "15": {"prix_base": 35.0, "prix_final": 35.0},
+        "16": {"prix_base": 35.0, "prix_final": 35.0}
+      },
+      "description": "Visite du Parlement européen",
+      "ventes_activees": false,
+      "total_ventes": 0.0
     }
   },
   "student_events": {
-    "1": [
-      "concert"
-    ],
-    "2": [
-      "concert"
-    ],
-    "3": [
-      "concert"
-    ],
-    "4": [
-      "concert"
-    ],
-    "5": [
-      "concert"
-    ],
-    "6": [
-      "concert"
-    ]
+    "1": ["sortie_theatre", "visite_musee", "concert"],
+    "2": ["concert"],
+    "3": ["concert"],
+    "4": ["concert"],
+    "5": ["visite_musee", "concert"],
+    "6": ["concert"],
+    "9": ["excursion_bruxelles"],
+    "10": ["excursion_bruxelles"],
+    "11": ["excursion_bruxelles"],
+    "12": ["excursion_bruxelles"],
+    "13": ["excursion_bruxelles"],
+    "14": ["excursion_bruxelles"],
+    "15": ["excursion_bruxelles"],
+    "16": ["excursion_bruxelles"],
+    "17": ["sortie_theatre", "visite_musee", "voyage_paris"],
+    "18": ["visite_musee", "voyage_paris"],
+    "25": ["sortie_theatre", "visite_musee", "voyage_paris"],
+    "33": ["sortie_theatre", "visite_musee", "voyage_paris"],
+    "41": ["sortie_theatre", "visite_musee", "voyage_paris"],
+    "42": ["sortie_theatre", "visite_musee", "voyage_paris"]
   }
 }
