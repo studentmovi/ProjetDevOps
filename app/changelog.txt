@@ -24,4 +24,8 @@ Version 0.4.0
 -Ajout d'un calendrier fonctionnel sur la page home
 
 Version 0.5.0
--Ajout d'animations au launcher
+- Correction du chargement de la version locale (version.txt était mal référencé)
+- Suppression de l'affichage "Mode Développement / Mode Production"
+- Ajout d'un nouveau footer : "By Erwan Michel - HELHa"
+- Stabilisation du launcher (fix crash animate_bus lors du destroy)
+- Amélioration du redimensionnement du bus et affichage du canvas
