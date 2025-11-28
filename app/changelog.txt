@@ -22,3 +22,6 @@ Version 0.4.0
 -Update du filtre
 -Update des données et affichage des etudiant
 -Ajout d'un calendrier fonctionnel sur la page home
+
+Version 0.5.0
+-Ajout d'animations au launcher
