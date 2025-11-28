@@ -86,7 +86,6 @@ class LauncherView:
 
         self.bus_img = ImageTk.PhotoImage(img)
 
-        # Canvas déjà fixé → pas besoin de le redimensionner
         self.bus = self.canvas.create_image(-TARGET_WIDTH, 70, image=self.bus_img)
 
         # =======================
@@ -143,7 +142,7 @@ class LauncherView:
         self.percent_label.pack(pady=(3, 10))
 
         # =======================
-        #   VERSION
+        #   FOOTER (VERSION + CRÉDIT)
         # =======================
         footer = tk.Frame(main_frame, bg="#1e1e1e")
         footer.pack(fill="x", side="bottom")
@@ -157,14 +156,14 @@ class LauncherView:
         )
         version.pack(side="left")
 
-        mode = tk.Label(
+        credit = tk.Label(
             footer,
-            text="Mode Développement" if self.controller.DEV_MODE else "Mode Production",
+            text="By Erwan Michel - HELHa",
             font=("Segoe UI", 9),
-            fg="#FFA726" if self.controller.DEV_MODE else "#4CAF50",
+            fg="#888",
             bg="#1e1e1e",
         )
-        mode.pack(side="right")
+        credit.pack(side="right")
 
     # -----------------------------------------------------
     #  ANIMATION DU BUS (40 FPS)
@@ -177,13 +176,13 @@ class LauncherView:
             x, y = self.canvas.coords(self.bus)
 
             if x > 700:
-                x = -350  # reset à gauche
+                x = -350
 
             self.canvas.coords(self.bus, x + self.bus_speed, y)
             self.root.after(25, self.animate_bus)
 
         except tk.TclError:
-            return  # fenêtre détruite → stop
+            return
 
     # -----------------------------------------------------
     #  PROGRESSION
