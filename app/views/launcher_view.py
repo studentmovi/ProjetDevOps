@@ -1,194 +1,229 @@
 import tkinter as tk
 from tkinter import ttk
 import time
+import os
+from PIL import Image, ImageTk
+
 
 class LauncherView:
-    """Vue moderne et stylée pour le launcher de l'application"""
-    
+    """Vue moderne animée pour le launcher TripSchool"""
+
     def __init__(self, controller):
         self.controller = controller
         self.root = tk.Tk()
-        
-        # Variables d'interface
+
+        # Variables
         self.progress_var = tk.DoubleVar()
         self.status_var = tk.StringVar(value="Initialisation...")
-        
+        self.bus_speed = 4
+        self.running = True  # empêche les crash pendant destroy()
+
         self.setup_window()
         self.setup_styles()
         self.create_widgets()
-        
+
+    # -----------------------------------------------------
+    #  CONFIG FENÊTRE
+    # -----------------------------------------------------
     def setup_window(self):
-        """Configure la fenêtre du loader"""
         self.root.title("TripSchool - Launcher")
-        
-        # Dimensions et centrage
-        width, height = 450, 300
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-        x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
-        
+
+        width, height = 600, 380
+        sw = self.root.winfo_screenwidth()
+        sh = self.root.winfo_screenheight()
+        x, y = (sw - width) // 2, (sh - height) // 2
+
         self.root.geometry(f"{width}x{height}+{x}+{y}")
         self.root.resizable(False, False)
-        
-        # Style moderne
         self.root.configure(bg="#1e1e1e")
-        self.root.overrideredirect(True)  # Enlève la barre de titre
-        
-        # Rendre la fenêtre toujours au premier plan
+        self.root.overrideredirect(True)
         self.root.attributes("-topmost", True)
-        
+
+    # -----------------------------------------------------
+    #  STYLES
+    # -----------------------------------------------------
     def setup_styles(self):
-        """Configure les styles modernes"""
         self.style = ttk.Style()
         self.style.theme_use("clam")
-        
-        # Style pour la barre de progression moderne
-        self.style.configure("Modern.Horizontal.TProgressbar",
-                           background="#4CAF50",
-                           troughcolor="#333333",
-                           borderwidth=0,
-                           lightcolor="#4CAF50",
-                           darkcolor="#4CAF50")
-    
+
+        self.style.configure(
+            "Modern.Horizontal.TProgressbar",
+            background="#4CAF50",
+            troughcolor="#2a2a2a",
+            borderwidth=0,
+            lightcolor="#4CAF50",
+            darkcolor="#4CAF50",
+        )
+
+    # -----------------------------------------------------
+    #  UI PRINCIPALE
+    # -----------------------------------------------------
     def create_widgets(self):
-        """Crée l'interface du loader"""
-        # Container principal avec coins arrondis simulés
-        main_frame = tk.Frame(self.root, bg="#1e1e1e", padx=40, pady=30)
+        main_frame = tk.Frame(self.root, bg="#1e1e1e", padx=30, pady=15)
         main_frame.pack(fill="both", expand=True)
-        
-        # Logo/Titre de l'application
-        title_frame = tk.Frame(main_frame, bg="#1e1e1e")
-        title_frame.pack(pady=(0, 30))
-        
-        # Icône principale (emoji ou caractère stylé)
-        icon_label = tk.Label(title_frame, 
-                            text="🎓",  # Icône éducation
-                            font=("Segoe UI", 32),
-                            bg="#1e1e1e",
-                            fg="#4CAF50")
-        icon_label.pack()
-        
-        # Nom de l'application
-        app_name = tk.Label(title_frame,
-                          text="ProjetDevOps",
-                          font=("Segoe UI", 18, "bold"),
-                          bg="#1e1e1e",
-                          fg="#ffffff")
-        app_name.pack()
-        
-        # Sous-titre
-        subtitle = tk.Label(title_frame,
-                          text="Gestion Élèves & Événements",
-                          font=("Segoe UI", 10),
-                          bg="#1e1e1e",
-                          fg="#cccccc")
-        subtitle.pack()
-        
-        # Container pour la progression
+
+        # =======================
+        #   CANVAS ANIMATION BUS
+        # =======================
+        self.canvas = tk.Canvas(
+            main_frame,
+            width=350,
+            height=140,
+            bg="#1e1e1e",
+            highlightthickness=0,
+        )
+        self.canvas.pack(pady=(5, 10))
+
+        # ===== CHARGEMENT + REDIMENSIONNEMENT DU BUS =====
+        bus_path = os.path.join(os.path.dirname(__file__), "..", "assets", "bus.png")
+
+        img = Image.open(bus_path)
+
+        TARGET_WIDTH = 350
+        ratio = TARGET_WIDTH / img.width
+        new_height = int(img.height * ratio)
+        img = img.resize((TARGET_WIDTH, new_height), Image.LANCZOS)
+
+        self.bus_img = ImageTk.PhotoImage(img)
+
+        # Canvas déjà fixé → pas besoin de le redimensionner
+        self.bus = self.canvas.create_image(-TARGET_WIDTH, 70, image=self.bus_img)
+
+        # =======================
+        #  TITRE
+        # =======================
+        title = tk.Label(
+            main_frame,
+            text="TripSchool",
+            font=("Segoe UI", 26, "bold"),
+            fg="white",
+            bg="#1e1e1e",
+        )
+        title.pack()
+
+        subtitle = tk.Label(
+            main_frame,
+            text="Chargement de l'application...",
+            font=("Segoe UI", 11),
+            fg="#cccccc",
+            bg="#1e1e1e",
+        )
+        subtitle.pack(pady=(0, 15))
+
+        # =======================
+        #  BARRE DE PROGRESSION
+        # =======================
         progress_frame = tk.Frame(main_frame, bg="#1e1e1e")
-        progress_frame.pack(fill="x", pady=20)
-        
-        # Barre de progression moderne
-        self.progress_bar = ttk.Progressbar(progress_frame,
-                                          style="Modern.Horizontal.TProgressbar",
-                                          mode="determinate",
-                                          variable=self.progress_var)
-        self.progress_bar.pack(fill="x", pady=(0, 10))
-        
-        # Texte de statut
-        self.status_label = tk.Label(progress_frame,
-                                   textvariable=self.status_var,
-                                   font=("Segoe UI", 9),
-                                   bg="#1e1e1e",
-                                   fg="#cccccc")
+        progress_frame.pack(fill="x")
+
+        self.progress_bar = ttk.Progressbar(
+            progress_frame,
+            style="Modern.Horizontal.TProgressbar",
+            variable=self.progress_var,
+            mode="determinate",
+        )
+        self.progress_bar.pack(fill="x", pady=(0, 5))
+
+        self.status_label = tk.Label(
+            progress_frame,
+            textvariable=self.status_var,
+            font=("Segoe UI", 10),
+            fg="#cccccc",
+            bg="#1e1e1e",
+        )
         self.status_label.pack()
-        
-        # Pourcentage
-        self.percent_label = tk.Label(progress_frame,
-                                    text="0%",
-                                    font=("Segoe UI", 9, "bold"),
-                                    bg="#1e1e1e",
-                                    fg="#4CAF50")
-        self.percent_label.pack()
-        
-        # Version info en bas
-        version_frame = tk.Frame(main_frame, bg="#1e1e1e")
-        version_frame.pack(side="bottom", fill="x")
-        
-        local_version = self.controller.get_local_version()
-        version_label = tk.Label(version_frame,
-                               text=f"Version {local_version}",
-                               font=("Segoe UI", 8),
-                               bg="#1e1e1e",
-                               fg="#666666")
-        version_label.pack(side="left")
-        
-        # Mode affiché
-        mode_text = "Mode Développement" if self.controller.DEV_MODE else "Mode Production"
-        mode_label = tk.Label(version_frame,
-                            text=mode_text,
-                            font=("Segoe UI", 8),
-                            bg="#1e1e1e",
-                            fg="#FFA726" if self.controller.DEV_MODE else "#4CAF50")
-        mode_label.pack(side="right")
-        
+
+        self.percent_label = tk.Label(
+            progress_frame,
+            text="0%",
+            font=("Segoe UI", 10, "bold"),
+            fg="#4CAF50",
+            bg="#1e1e1e",
+        )
+        self.percent_label.pack(pady=(3, 10))
+
+        # =======================
+        #   VERSION
+        # =======================
+        footer = tk.Frame(main_frame, bg="#1e1e1e")
+        footer.pack(fill="x", side="bottom")
+
+        version = tk.Label(
+            footer,
+            text=f"Version {self.controller.get_local_version()}",
+            font=("Segoe UI", 9),
+            fg="#666",
+            bg="#1e1e1e",
+        )
+        version.pack(side="left")
+
+        mode = tk.Label(
+            footer,
+            text="Mode Développement" if self.controller.DEV_MODE else "Mode Production",
+            font=("Segoe UI", 9),
+            fg="#FFA726" if self.controller.DEV_MODE else "#4CAF50",
+            bg="#1e1e1e",
+        )
+        mode.pack(side="right")
+
+    # -----------------------------------------------------
+    #  ANIMATION DU BUS (40 FPS)
+    # -----------------------------------------------------
+    def animate_bus(self):
+        if not self.running:
+            return
+
+        try:
+            x, y = self.canvas.coords(self.bus)
+
+            if x > 700:
+                x = -350  # reset à gauche
+
+            self.canvas.coords(self.bus, x + self.bus_speed, y)
+            self.root.after(25, self.animate_bus)
+
+        except tk.TclError:
+            return  # fenêtre détruite → stop
+
+    # -----------------------------------------------------
+    #  PROGRESSION
+    # -----------------------------------------------------
     def update_progress(self, value, status):
-        """Met à jour la progression et le statut"""
         self.progress_var.set(value)
         self.status_var.set(status)
         self.percent_label.config(text=f"{int(value)}%")
+
+        self.bus_speed = max(4, int(value / 10))
+
         self.root.update()
-        
+
     def animate_progress(self, start, end, duration, status):
-        """Animation fluide de la barre de progression"""
-        steps = 50
+        steps = 45
         step_value = (end - start) / steps
         step_duration = duration / steps
-        
+
         for i in range(steps + 1):
-            current_value = start + (step_value * i)
-            self.update_progress(current_value, status)
+            self.update_progress(start + step_value * i, status)
             time.sleep(step_duration)
-    
-    def update_status(self, status):
-        """Met à jour seulement le statut"""
-        self.root.after(0, lambda: self.status_var.set(status))
-    
-    def show_error(self, error_msg):
-        """Affiche une erreur dans le loader"""
-        def show_error_ui():
-            self.status_var.set(f"❌ Erreur: {error_msg}")
-            self.progress_var.set(0)
-            self.percent_label.config(text="Erreur", fg="#F44336")
-            
-            # Bouton pour fermer en cas d'erreur
-            error_button = tk.Button(self.root,
-                                   text="Fermer",
-                                   command=self.root.quit,
-                                   bg="#F44336",
-                                   fg="white",
-                                   font=("Segoe UI", 9),
-                                   relief="flat",
-                                   padx=20)
-            error_button.pack(pady=10)
-        
-        self.root.after(0, show_error_ui)
-    
+
+    def update_status(self, txt):
+        self.status_var.set(txt)
+
+    # -----------------------------------------------------
+    #  ERREURS + FERMETURE
+    # -----------------------------------------------------
+    def show_error(self, txt):
+        self.status_var.set(f"❌ {txt}")
+        self.percent_label.config(text="Erreur", fg="red")
+
     def close_loader(self):
-        """Ferme le loader seulement si l'app est lancée"""
-        def close_ui():
-            if self.controller.is_app_launched():
-                self.root.quit()
-                self.root.destroy()
-            else:
-                # Si l'app n'a pas pu se lancer, garder le loader ouvert avec l'erreur
-                self.show_error("L'application n'a pas pu se lancer correctement")
-        
-        self.root.after(0, close_ui)
-    
+        self.running = False
+        self.root.after(50, self.root.destroy)
+
+    # -----------------------------------------------------
+    #  RUN
+    # -----------------------------------------------------
     def run(self):
-        """Lance le loader"""
-        # Démarrer la séquence de chargement après un court délai
-        self.root.after(500, self.controller.start_loading_sequence)
+        self.animate_bus()
+        self.root.after(400, self.controller.start_loading_sequence)
         self.root.mainloop()
