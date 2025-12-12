@@ -1,0 +1,55 @@
+{
+  "latest": "0.5.0",
+  "releases": [
+    {
+      "version": "0.5.0",
+      "changes": [
+        "Fixed local version loading (version.txt was incorrectly referenced)",
+        "Removed the display of \"Development Mode / Production Mode\"",
+        "Added a new footer: \"By Erwan Michel - HELHa\"",
+        "Launcher stabilization (fixed crash in animate_bus during destroy)",
+        "Improved bus resizing and canvas rendering"
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "changes": [
+        "Filter update",
+        "Updated student data and display",
+        "Added a functional calendar on the home page"
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "changes": [
+        "UI update",
+        "Modified Home view",
+        "Implemented Excel import logic"
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "changes": [
+        "Filter modification",
+        "Implemented event-based price calculation",
+        "Additional feature"
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "changes": [
+        "Added pages to view events and students",
+        "Implemented student filtering",
+        "Project structure revised"
+      ]
+    },
+    {
+      "version": "0.0.0",
+      "changes": [
+        "Project created",
+        "Initial structure with main.py and launcher.py",
+        "Added version.txt and changelog.txt files"
+      ]
+    }
+  ]
+}

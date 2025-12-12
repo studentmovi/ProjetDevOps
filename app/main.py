@@ -29,7 +29,7 @@ class MainApplication:
         # ====================================================
         self.styles = AppStyles()
         self.ttk_style = self.styles.configure_ttk_style(self.root)
-        self.styles.configure_window(self.root, "🎓 CND - Gestion Événements")
+        self.styles.configure_window(self.root, "🎓 TripSchool - Gestion Événements")
 
         # Configuration de la fenêtre
         self.root.geometry("1400x900")
