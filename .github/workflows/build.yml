@@ -30,6 +30,12 @@ jobs:
         pip install -r app/requirements.txt
         pip install pyinstaller
 
+    - name: Read app version
+      id: app_version
+      run: |
+        $v = Get-Content app/version.txt
+        echo "version=$v" >> $env:GITHUB_OUTPUT
+
     - name: Build main.exe
       run: |
         pyinstaller --onefile app/main.py
@@ -48,13 +54,14 @@ jobs:
 
     - name: Create ZIP archive
       run: |
-        powershell Compress-Archive release TripSchool-Windows.zip
+        powershell Compress-Archive release pytrip-${{ steps.app_version.outputs.version }}-windows.zip
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: TripSchool-Windows.zip
+        files: pytrip-${{ steps.app_version.outputs.version }}-windows.zip
 
+    # 🔔 Discord — SUCCESS
     - name: Notify Discord (success)
       if: success()
       run: |
@@ -62,8 +69,8 @@ jobs:
           username = "TripSchool CI"
           embeds = @(
             @{
-              title = "🚀 Nouvelle release TripSchool"
-              description = "La version **${{ github.ref_name }}** est maintenant disponible."
+              title = "🚀 Nouvelle release PyTrip"
+              description = "Version **${{ steps.app_version.outputs.version }}** disponible"
               color = 3066993
               fields = @(
                 @{
@@ -73,12 +80,12 @@ jobs:
                 },
                 @{
                   name = "Version"
-                  value = "${{ github.ref_name }}"
+                  value = "${{ steps.app_version.outputs.version }}"
                   inline = $true
                 },
                 @{
                   name = "Téléchargement"
-                  value = "[Voir la release](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})"
+                  value = "[Voir la release](https://github.com/${{ github.repository }}/releases/latest)"
                   inline = $false
                 }
               )
@@ -95,6 +102,7 @@ jobs:
           -ContentType "application/json" `
           -Body $payload
 
+    # 🔔 Discord — FAILURE
     - name: Notify Discord (failure)
       if: failure()
       run: |
@@ -103,7 +111,7 @@ jobs:
           embeds = @(
             @{
               title = "❌ Build échoué"
-              description = "La pipeline pour **${{ github.ref_name }}** a échoué."
+              description = "La pipeline pour la version **${{ steps.app_version.outputs.version }}** a échoué."
               color = 15158332
               fields = @(
                 @{
