@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - "v*"
-      
+
 permissions:
   contents: write
 
@@ -54,3 +54,73 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: TripSchool-Windows.zip
+
+    - name: Notify Discord (success)
+      if: success()
+      run: |
+        $payload = @{
+          username = "TripSchool CI"
+          embeds = @(
+            @{
+              title = "🚀 Nouvelle release TripSchool"
+              description = "La version **${{ github.ref_name }}** est maintenant disponible."
+              color = 3066993
+              fields = @(
+                @{
+                  name = "Repository"
+                  value = "${{ github.repository }}"
+                  inline = $true
+                },
+                @{
+                  name = "Version"
+                  value = "${{ github.ref_name }}"
+                  inline = $true
+                },
+                @{
+                  name = "Téléchargement"
+                  value = "[Voir la release](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})"
+                  inline = $false
+                }
+              )
+              footer = @{
+                text = "GitHub Actions • CI/CD"
+              }
+            }
+          )
+        } | ConvertTo-Json -Depth 5
+
+        Invoke-RestMethod `
+          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body $payload
+
+    - name: Notify Discord (failure)
+      if: failure()
+      run: |
+        $payload = @{
+          username = "TripSchool CI"
+          embeds = @(
+            @{
+              title = "❌ Build échoué"
+              description = "La pipeline pour **${{ github.ref_name }}** a échoué."
+              color = 15158332
+              fields = @(
+                @{
+                  name = "Logs"
+                  value = "[Voir GitHub Actions](https://github.com/${{ github.repository }}/actions)"
+                  inline = $false
+                }
+              )
+              footer = @{
+                text = "GitHub Actions • CI/CD"
+              }
+            }
+          )
+        } | ConvertTo-Json -Depth 5
+
+        Invoke-RestMethod `
+          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body $payload
