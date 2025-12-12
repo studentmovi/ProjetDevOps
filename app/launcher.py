@@ -1,11 +1,10 @@
+import json
 import os
 import shutil
 import sys
 import subprocess
 import threading
 import time
-from utils.logger import log_info, log_warning, log_error
-from views.launcher_view import LauncherView
 
 try:
     import requests
@@ -49,12 +48,27 @@ except Exception:
 
     requests = SimpleRequests()
 
+from utils.logger import log_info, log_warning, log_error
+from views.launcher_view import LauncherView
+
+
+def resource_path(*parts):
+    """Permet de charger correctement les fichiers même dans un exe PyInstaller"""
+    if hasattr(sys, "_MEIPASS"):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, *parts)
+
 
 class LauncherController:
     """Contrôleur principal du launcher TripSchool"""
 
     def __init__(self):
-        self.DEV_MODE = True
+        # DEV_MODE = True si lancé en .py
+        # DEV_MODE = False si packagé en exe
+        self.DEV_MODE = not getattr(sys, "frozen", False)
+
         self.setup_config()
 
         self.app_launched = False
@@ -62,25 +76,29 @@ class LauncherController:
 
         self.view = LauncherView(self)
 
-    # -----------------------------------------------------
-    # CONFIG
-    # -----------------------------------------------------
     def setup_config(self):
         self.USER = "studentmovi"
         self.REPO = "ProjetDevOps"
 
         self.VERSION_FILE = "version.txt"
-        self.CHANGELOG_FILE = "changelog.txt"
-        self.LOCAL_EXE_PATH = "main.exe"
+        self.CHANGELOG_FILE = "changelog.json"
 
-        self.MAIN_PY_PATH = os.path.join(os.path.dirname(__file__), "main.py")
+        # Local version → dans le même dossier que launcher
+        self.LOCAL_VERSION_FILE = resource_path(self.VERSION_FILE)
 
+        # App paths
+        self.LOCAL_EXE_PATH = resource_path("main.exe")
+        self.MAIN_PY_PATH = resource_path("main.py")
+
+        # URLs GitHub
         self.GITHUB_RAW = (
             f"https://raw.githubusercontent.com/{self.USER}/{self.REPO}/main/app"
         )
 
-        self.LOCAL_VERSION_FILE = os.path.join(os.path.dirname(__file__), self.VERSION_FILE)
-        self.LOCAL_EXE_PATH_FULL = os.path.join(os.path.dirname(__file__), self.LOCAL_EXE_PATH)
+        # EXE depuis RELEASES (le seul endroit fiable pour les binaires)
+        self.EXE_URL = (
+            f"https://github.com/{self.USER}/{self.REPO}/releases/latest/download/main.exe"
+        )
 
     # -----------------------------------------------------
     # VERSION
@@ -103,26 +121,40 @@ class LauncherController:
     # -----------------------------------------------------
     # CHANGELOG + MAJ
     # -----------------------------------------------------
-    def show_changelog(self):
+    def show_changelog(self, version):
         try:
             r = requests.get(f"{self.GITHUB_RAW}/{self.CHANGELOG_FILE}", timeout=5)
-            if r.status_code == 200:
-                print("\n📝 Nouveautés :\n" + r.text)
-        except:
-            print("Impossible de charger le changelog.")
+            if r.status_code != 200:
+                print("⚠️ Unable to load changelog.")
+                return
+
+            data = json.loads(r.text)
+
+            for release in data.get("releases", []):
+                if release.get("version") == version:
+                    print("\n📝 What's new in version", version)
+                    print("-" * 35)
+                    for change in release.get("changes", []):
+                        print(f" • {change}")
+                    print()
+                    return
+
+            print("ℹ️ No changelog found for this version.")
+
+        except Exception as e:
+            log_error(e, "Error while loading changelog")
+
 
     def update_main_exe(self):
+        """Télécharge la nouvelle version de main.exe depuis GitHub Releases"""
         try:
-            r = requests.get(
-                f"{self.GITHUB_RAW}/{self.LOCAL_EXE_PATH_FULL}",
-                timeout=10,
-                stream=True,
-            )
+            print("⬇️ Téléchargement de la nouvelle version...")
+            r = requests.get(self.EXE_URL, timeout=10, stream=True)
             if r.status_code == 200:
-                tmp = self.LOCAL_EXE_PATH_FULL + ".tmp"
+                tmp = self.LOCAL_EXE_PATH + ".tmp"
                 with open(tmp, "wb") as f:
                     shutil.copyfileobj(r.raw, f)
-                shutil.move(tmp, self.LOCAL_EXE_PATH_FULL)
+                shutil.move(tmp, self.LOCAL_EXE_PATH)
                 print("✅ main.exe mis à jour")
         except Exception as e:
             log_error(e, "Erreur lors de la mise à jour")
@@ -135,6 +167,7 @@ class LauncherController:
             print(f"⚠️ Mise à jour disponible : {remote}")
             self.show_changelog()
             self.update_main_exe()
+
             with open(self.LOCAL_VERSION_FILE, "w") as f:
                 f.write(remote)
         else:
@@ -147,19 +180,13 @@ class LauncherController:
         def run_loading():
             try:
                 self.view.animate_progress(0, 20, 0.5, "Initialisation...")
-                self.view.animate_progress(
-                    20, 40, 0.7, "Vérification des mises à jour..."
-                )
+                self.view.animate_progress(20, 40, 0.7, "Vérification des mises à jour...")
                 self.check_update()
 
-                self.view.animate_progress(
-                    40, 65, 0.6, "Chargement des modules..."
-                )
+                self.view.animate_progress(40, 65, 0.6, "Chargement des modules...")
                 time.sleep(0.3)
 
-                self.view.animate_progress(
-                    65, 85, 0.5, "Préparation de l'interface..."
-                )
+                self.view.animate_progress(65, 85, 0.5, "Préparation de l'interface...")
                 time.sleep(0.2)
 
                 self.view.animate_progress(85, 100, 0.4, "Finalisation...")
@@ -207,18 +234,26 @@ class LauncherController:
         raise Exception("Le processus s'est fermé directement.")
 
     def launch_prod_mode(self):
-        if not os.path.exists(self.LOCAL_EXE_PATH_FULL):
-            raise FileNotFoundError("main.exe introuvable")
+        """Lance l'exe sous Windows, ou python3 main.py sous Linux/Wine"""
+        # Windows EXE
+        if os.path.exists(self.LOCAL_EXE_PATH):
+            os.startfile(self.LOCAL_EXE_PATH)
+            time.sleep(1.5)
+            self.app_launched = True
+            return True
 
-        os.startfile(self.LOCAL_EXE_PATH_FULL)
-        time.sleep(1.5)
-        self.app_launched = True
-        return True
+        # Linux fallback : exécuter main.py
+        if os.path.exists(self.MAIN_PY_PATH):
+            subprocess.Popen(["python3", self.MAIN_PY_PATH])
+            time.sleep(1.5)
+            self.app_launched = True
+            return True
+
+        raise FileNotFoundError("Impossible de lancer l'application.")
 
     def is_app_launched(self):
         return self.app_launched
 
-    # -----------------------------------------------------
     def run(self):
         self.view.run()
 
@@ -226,3 +261,4 @@ class LauncherController:
 if __name__ == "__main__":
     launcher = LauncherController()
     launcher.run()
+# ====================================================
