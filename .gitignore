@@ -27,3 +27,13 @@ Thumbs.db
 build/
 dist/
 *.egg-info/
+
+# PyInstaller
+*.spec
+
+# Tests / coverage (si tu en ajoutes plus tard)
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
