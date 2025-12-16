@@ -1,6 +1,19 @@
 {
-  "latest": "0.5.0",
+  "latest": "0.6.0",
   "releases": [
+    {
+      "version": "0.6.0",
+      "changes": [
+        "Added in-app update system with GitHub version check",
+        "Implemented styled update popup (blue & off-white theme)",
+        "Added \"Update now\" and \"Remind me later\" options",
+        "Close button now behaves as \"Remind me later\"",
+        "Forced update after a configurable delay (7 days)",
+        "Background update check without blocking the UI",
+        "Added splash screen when launching the main application",
+        "Improved launcher → main transition (no UI flash)",
+      ]
+    },
     {
       "version": "0.5.0",
       "changes": [
