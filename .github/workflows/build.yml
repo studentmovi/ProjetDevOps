@@ -13,9 +13,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    # ====================================================
+    #  CHECKOUT
+    # ====================================================
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # ====================================================
+    #  PYTHON
+    # ====================================================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -30,20 +36,40 @@ jobs:
         pip install -r app/requirements.txt
         pip install pyinstaller
 
+    # ====================================================
+    #  VERSION
+    # ====================================================
     - name: Read app version
       id: app_version
       run: |
         $v = Get-Content app/version.txt
         echo "version=$v" >> $env:GITHUB_OUTPUT
 
+    # ====================================================
+    #  BUILD MAIN
+    # ====================================================
     - name: Build main.exe
       run: |
-        pyinstaller --onefile app/main.py
+        pyinstaller --onefile --noconsole `
+          --add-data "app/assets;assets" `
+          --add-data "app/version.txt;." `
+          --add-data "app/changelog.json;." `
+          app/main.py
 
+    # ====================================================
+    #  BUILD LAUNCHER
+    # ====================================================
     - name: Build launcher.exe
       run: |
-        pyinstaller --onefile app/launcher.py
+        pyinstaller --onefile --noconsole `
+          --add-data "app/assets;assets" `
+          --add-data "app/version.txt;." `
+          --add-data "app/changelog.json;." `
+          app/launcher.py
 
+    # ====================================================
+    #  RELEASE FOLDER
+    # ====================================================
     - name: Prepare release folder
       run: |
         mkdir release
@@ -52,72 +78,49 @@ jobs:
         copy app\version.txt release\
         copy app\changelog.json release\
 
+    # ====================================================
+    #  ZIP
+    # ====================================================
     - name: Create ZIP archive
       run: |
-        powershell Compress-Archive release pytrip-${{ steps.app_version.outputs.version }}-windows.zip
+        Compress-Archive -Path release -DestinationPath pytrip-${{ steps.app_version.outputs.version }}-windows.zip
 
+    # ====================================================
+    #  GITHUB RELEASE
+    # ====================================================
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         files: pytrip-${{ steps.app_version.outputs.version }}-windows.zip
 
-    # 🔔 Discord — SUCCESS (Version Moderne)
+    # ====================================================
+    #  DISCORD — SUCCESS
+    # ====================================================
     - name: Notify Discord (success)
       if: success()
       run: |
-        # Configuration des liens et données
         $repoUrl = "https://github.com/${{ github.repository }}"
         $releaseUrl = "$repoUrl/releases/tag/${{ github.ref_name }}"
         $commitUrl = "$repoUrl/commit/${{ github.sha }}"
         $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-        
-        # Message du dernier commit (nettoyé)
         $commitMsg = "${{ github.event.head_commit.message }}" -replace '"', '\"'
-        
-        # Construction du JSON complexe
+
         $payload = @{
           username = "TripSchool Builder"
-          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png" # Icône Python générique (tu peux changer)
+          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
           embeds = @(
             @{
-              author = @{
-                name = "Succès du déploiement : ${{ github.repository }}"
-                url = $repoUrl
-                icon_url = "https://github.com/${{ github.actor }}.png" # Avatar de celui qui a push
-              }
               title = "🚀 Nouvelle version ${{ steps.app_version.outputs.version }} publiée !"
               url = $releaseUrl
               description = "La compilation Windows a réussi et la release a été créée automatiquement."
-              color = 5763719 # Vert agréable (Hex: #57F287)
-              thumbnail = @{
-                url = "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" # Logo du projet (à personnaliser)
-              }
+              color = 5763719
               fields = @(
-                @{
-                  name = "📦 Version"
-                  value = "`tag: ${{ github.ref_name }}`"
-                  inline = $true
-                },
-                @{
-                  name = "👤 Auteur"
-                  value = "[${{ github.actor }}](https://github.com/${{ github.actor }})"
-                  inline = $true
-                },
-                @{
-                  name = "📝 Commit"
-                  value = "[$commitMsg]($commitUrl)"
-                  inline = $false
-                },
-                @{
-                  name = "📥 Téléchargement"
-                  value = "Click here to download: **[pytrip-${{ steps.app_version.outputs.version }}-windows.zip]($releaseUrl)**"
-                  inline = $false
-                }
+                @{ name="📦 Version"; value="`${{ github.ref_name }}`"; inline=$true },
+                @{ name="👤 Auteur"; value="${{ github.actor }}"; inline=$true },
+                @{ name="📝 Commit"; value="[$commitMsg]($commitUrl)"; inline=$false },
+                @{ name="📥 Téléchargement"; value="[Télécharger la version Windows]($releaseUrl)"; inline=$false }
               )
-              footer = @{
-                text = "TripSchool CI • Windows-Latest"
-                icon_url = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-              }
+              footer = @{ text="TripSchool CI • Windows" }
               timestamp = $timestamp
             }
           )
@@ -125,42 +128,23 @@ jobs:
 
         Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload
 
-    # 🔔 Discord — FAILURE (Version Moderne)
+    # ====================================================
+    #  DISCORD — FAILURE
+    # ====================================================
     - name: Notify Discord (failure)
       if: failure()
       run: |
-        $repoUrl = "https://github.com/${{ github.repository }}"
-        $runUrl = "$repoUrl/actions/runs/${{ github.run_id }}"
+        $runUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
 
         $payload = @{
           username = "TripSchool Builder"
-          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
           embeds = @(
             @{
-              author = @{
-                name = "Échec du déploiement"
-                icon_url = "https://github.com/${{ github.actor }}.png"
-              }
-              title = "❌ Le build a rencontré une erreur"
-              url = $runUrl
-              description = "La pipeline s'est arrêtée inopinément. Veuillez vérifier les logs ci-dessous."
-              color = 15548997 # Rouge vif (Hex: #ED4245)
-              fields = @(
-                @{
-                  name = "🚧 Version tentée"
-                  value = "${{ steps.app_version.outputs.version }}"
-                  inline = $true
-                },
-                @{
-                  name = "🔍 Analyse"
-                  value = "[Voir les logs d'erreur sur GitHub]($runUrl)"
-                  inline = $false
-                }
-              )
-              footer = @{
-                text = "TripSchool CI • Erreur critique"
-              }
+              title = "❌ Build échoué"
+              description = "[Voir les logs]($runUrl)"
+              color = 15548997
+              footer = @{ text="TripSchool CI • Erreur" }
               timestamp = $timestamp
             }
           )
