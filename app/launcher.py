@@ -10,50 +10,28 @@ try:
     import requests
 except Exception:
     import urllib.request
-    import urllib.error
     import io
 
     class SimpleResponse:
-        def __init__(self, status_code, content, url=None):
+        def __init__(self, status_code, content):
             self.status_code = status_code
-            self._content = content
-            self.url = url
-            if isinstance(content, bytes):
-                try:
-                    self.text = content.decode("utf-8")
-                except Exception:
-                    self.text = content.decode("latin-1", errors="ignore")
-                self.raw = io.BytesIO(content)
-            else:
-                self.text = str(content)
-                self.raw = io.BytesIO(self.text.encode("utf-8"))
+            self.raw = io.BytesIO(content)
+            self.text = content.decode("utf-8", errors="ignore")
 
     class SimpleRequests:
         @staticmethod
-        def get(url, timeout=5, stream=False):
+        def get(url, timeout=10, stream=False):
             req = urllib.request.Request(url, headers={"User-Agent": "python"})
-            try:
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    data = resp.read()
-                    status = getattr(resp, "status", getattr(resp, "getcode", 200))
-                    return SimpleResponse(status, data, url=url)
-            except urllib.error.HTTPError as e:
-                try:
-                    data = e.read()
-                except Exception:
-                    data = b""
-                return SimpleResponse(getattr(e, "code", 500), data, url=url)
-            except Exception as e:
-                return SimpleResponse(0, str(e).encode("utf-8"), url=url)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return SimpleResponse(resp.status, resp.read())
 
     requests = SimpleRequests()
 
-from utils.logger import log_info, log_warning, log_error
+from utils.logger import log_error
 from views.launcher_view import LauncherView
 
 
 def resource_path(*parts):
-    """Permet de charger correctement les fichiers même dans un exe PyInstaller"""
     if hasattr(sys, "_MEIPASS"):
         base = sys._MEIPASS
     else:
@@ -62,203 +40,152 @@ def resource_path(*parts):
 
 
 class LauncherController:
-    """Contrôleur principal du launcher TripSchool"""
 
     def __init__(self):
-        # DEV_MODE = True si lancé en .py
-        # DEV_MODE = False si packagé en exe
         self.DEV_MODE = not getattr(sys, "frozen", False)
-
         self.setup_config()
 
-        self.app_launched = False
-        self.app_process = None
-
+        self.app_started = False  # 🔒 anti double lancement
         self.view = LauncherView(self)
 
+    # --------------------------------------------------
+    # CONFIG
+    # --------------------------------------------------
     def setup_config(self):
         self.USER = "studentmovi"
         self.REPO = "ProjetDevOps"
 
-        self.VERSION_FILE = "version.txt"
-        self.CHANGELOG_FILE = "changelog.json"
-
-        # Local version → dans le même dossier que launcher
-        self.LOCAL_VERSION_FILE = resource_path(self.VERSION_FILE)
-
-        # App paths
+        self.VERSION_FILE = resource_path("version.txt")
         self.LOCAL_EXE_PATH = resource_path("main.exe")
         self.MAIN_PY_PATH = resource_path("main.py")
 
-        # URLs GitHub
-        self.GITHUB_RAW = (
-            f"https://raw.githubusercontent.com/{self.USER}/{self.REPO}/main/app"
-        )
+        self.GITHUB_RAW = f"https://raw.githubusercontent.com/{self.USER}/{self.REPO}/main/app"
+        self.EXE_URL = f"https://github.com/{self.USER}/{self.REPO}/releases/latest/download/main.exe"
 
-        # EXE depuis RELEASES (le seul endroit fiable pour les binaires)
-        self.EXE_URL = (
-            f"https://github.com/{self.USER}/{self.REPO}/releases/latest/download/main.exe"
-        )
-
-    # -----------------------------------------------------
+    # --------------------------------------------------
     # VERSION
-    # -----------------------------------------------------
+    # --------------------------------------------------
     def get_local_version(self):
-        if not os.path.exists(self.LOCAL_VERSION_FILE):
+        if not os.path.exists(self.VERSION_FILE):
             return "0.0.0"
-        with open(self.LOCAL_VERSION_FILE, "r") as f:
+        with open(self.VERSION_FILE, "r") as f:
             return f.read().strip()
 
     def get_remote_version(self):
-        try:
-            r = requests.get(f"{self.GITHUB_RAW}/{self.VERSION_FILE}", timeout=5)
-            if r.status_code == 200:
-                return r.text.strip()
-        except Exception as e:
-            log_error(e, "Erreur en récupérant la version distante")
-        return None
+        r = requests.get(f"{self.GITHUB_RAW}/version.txt")
+        return r.text.strip() if r.status_code == 200 else None
 
-    # -----------------------------------------------------
-    # CHANGELOG + MAJ
-    # -----------------------------------------------------
-    def show_changelog(self, version):
-        try:
-            r = requests.get(f"{self.GITHUB_RAW}/{self.CHANGELOG_FILE}", timeout=5)
-            if r.status_code != 200:
-                print("⚠️ Unable to load changelog.")
-                return
-
-            data = json.loads(r.text)
-
-            for release in data.get("releases", []):
-                if release.get("version") == version:
-                    print("\n📝 What's new in version", version)
-                    print("-" * 35)
-                    for change in release.get("changes", []):
-                        print(f" • {change}")
-                    print()
-                    return
-
-            print("ℹ️ No changelog found for this version.")
-
-        except Exception as e:
-            log_error(e, "Error while loading changelog")
-
-
-    def update_main_exe(self):
-        """Télécharge la nouvelle version de main.exe depuis GitHub Releases"""
-        try:
-            print("⬇️ Téléchargement de la nouvelle version...")
-            r = requests.get(self.EXE_URL, timeout=10, stream=True)
-            if r.status_code == 200:
-                tmp = self.LOCAL_EXE_PATH + ".tmp"
-                with open(tmp, "wb") as f:
-                    shutil.copyfileobj(r.raw, f)
-                shutil.move(tmp, self.LOCAL_EXE_PATH)
-                print("✅ main.exe mis à jour")
-        except Exception as e:
-            log_error(e, "Erreur lors de la mise à jour")
-
-    def check_update(self):
+    # --------------------------------------------------
+    # 🔁 UPDATE FLOW (UNIQUEMENT avec --update)
+    # --------------------------------------------------
+    def perform_update_flow(self):
         local = self.get_local_version()
         remote = self.get_remote_version()
 
-        if remote and remote != local:
-            print(f"⚠️ Mise à jour disponible : {remote}")
-            self.show_changelog()
-            self.update_main_exe()
+        if not remote or remote == local:
+            self.start_app_once()
+            return
 
-            with open(self.LOCAL_VERSION_FILE, "w") as f:
+        accepted = self.view.show_update_popup(local, remote)
+        if not accepted:
+            self.start_app_once()
+            return
+
+        try:
+            self.view.animate_progress(20, 80, 1.2, "Téléchargement de la mise à jour...")
+            self.safe_update_exe()
+
+            with open(self.VERSION_FILE, "w") as f:
                 f.write(remote)
-        else:
-            print("✅ Application à jour.")
 
-    # -----------------------------------------------------
-    # SÉQUENCE DE CHARGEMENT
-    # -----------------------------------------------------
+            self.view.animate_progress(80, 100, 0.4, "Finalisation...")
+
+        except Exception as e:
+            log_error(e, "Erreur MAJ")
+            self.view.show_error("Mise à jour échouée")
+
+        self.start_app_once()
+
+    # --------------------------------------------------
+    # 🔐 UPDATE SAFE
+    # --------------------------------------------------
+    def safe_update_exe(self):
+        tmp = self.LOCAL_EXE_PATH + ".tmp"
+        bak = self.LOCAL_EXE_PATH + ".bak"
+
+        r = requests.get(self.EXE_URL, stream=True)
+        if r.status_code != 200:
+            raise Exception("Téléchargement échoué")
+
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(r.raw, f)
+
+        if os.path.exists(self.LOCAL_EXE_PATH):
+            shutil.move(self.LOCAL_EXE_PATH, bak)
+
+        shutil.move(tmp, self.LOCAL_EXE_PATH)
+
+        if os.path.exists(bak):
+            os.remove(bak)
+
+    # --------------------------------------------------
+    # 🚌 SÉQUENCE DE CHARGEMENT (UI SEULEMENT)
+    # --------------------------------------------------
     def start_loading_sequence(self):
         def run_loading():
             try:
-                self.view.animate_progress(0, 20, 0.5, "Initialisation...")
-                self.view.animate_progress(20, 40, 0.7, "Vérification des mises à jour...")
-                self.check_update()
+                self.view.animate_progress(0, 20, 0.4, "Initialisation...")
+                self.view.animate_progress(20, 45, 0.6, "Chargement des ressources...")
+                self.view.animate_progress(45, 70, 0.6, "Préparation de l'application...")
+                self.view.animate_progress(70, 90, 0.4, "Finalisation...")
+                self.view.animate_progress(90, 100, 0.3, "Lancement...")
 
-                self.view.animate_progress(40, 65, 0.6, "Chargement des modules...")
-                time.sleep(0.3)
-
-                self.view.animate_progress(65, 85, 0.5, "Préparation de l'interface...")
-                time.sleep(0.2)
-
-                self.view.animate_progress(85, 100, 0.4, "Finalisation...")
-
-                self.view.update_status("🚀 Lancement de l'application...")
-                success = self.launch_app_and_wait()
-
-                if success:
-                    self.view.update_status("✅ Application lancée !")
-                    time.sleep(0.5)
-                    self.view.close_loader()
-                else:
-                    raise Exception("L'application n'a pas pu démarrer.")
+                self.start_app_once()
 
             except Exception as e:
-                log_error(e, "Erreur pendant le chargement")
                 self.view.show_error(str(e))
 
         threading.Thread(target=run_loading, daemon=True).start()
 
-    # -----------------------------------------------------
-    # LANCEMENT APPLICATION
-    # -----------------------------------------------------
-    def launch_app_and_wait(self):
+    # --------------------------------------------------
+    # 🚀 LANCEMENT UNIQUE (clé du fix)
+    # --------------------------------------------------
+    def start_app_once(self):
+        if self.app_started:
+            return  # 🔒 empêche double lancement
+
+        self.app_started = True
+        self.view.update_status("🚀 Lancement de l'application...")
+
         try:
             if self.DEV_MODE:
-                return self.launch_dev_mode()
+                subprocess.Popen(
+                    [sys.executable, self.MAIN_PY_PATH],
+                    close_fds=True
+                )
             else:
-                return self.launch_prod_mode()
-        except:
-            return False
+                subprocess.Popen(
+                    [self.LOCAL_EXE_PATH],
+                    close_fds=True
+                )
+        except Exception as e:
+            self.view.show_error(str(e))
+            return
 
-    def launch_dev_mode(self):
-        if not os.path.exists(self.MAIN_PY_PATH):
-            raise FileNotFoundError("main.py introuvable")
+        # fermer le launcher APRÈS avoir lancé le main
+        self.view.root.after(120, self.view.close_loader)
 
-        self.app_process = subprocess.Popen([sys.executable, self.MAIN_PY_PATH])
-
-        for _ in range(10):
-            time.sleep(0.2)
-            if self.app_process.poll() is None:
-                self.app_launched = True
-                return True
-
-        raise Exception("Le processus s'est fermé directement.")
-
-    def launch_prod_mode(self):
-        """Lance l'exe sous Windows, ou python3 main.py sous Linux/Wine"""
-        # Windows EXE
-        if os.path.exists(self.LOCAL_EXE_PATH):
-            os.startfile(self.LOCAL_EXE_PATH)
-            time.sleep(1.5)
-            self.app_launched = True
-            return True
-
-        # Linux fallback : exécuter main.py
-        if os.path.exists(self.MAIN_PY_PATH):
-            subprocess.Popen(["python3", self.MAIN_PY_PATH])
-            time.sleep(1.5)
-            self.app_launched = True
-            return True
-
-        raise FileNotFoundError("Impossible de lancer l'application.")
-
-    def is_app_launched(self):
-        return self.app_launched
-
+    # --------------------------------------------------
+    # RUN
+    # --------------------------------------------------
     def run(self):
+        if "--update" in sys.argv:
+            self.view.root.after(300, self.perform_update_flow)
+        else:
+            self.view.root.after(300, self.start_loading_sequence)
+
         self.view.run()
 
 
 if __name__ == "__main__":
-    launcher = LauncherController()
-    launcher.run()
-# ====================================================
+    LauncherController().run()

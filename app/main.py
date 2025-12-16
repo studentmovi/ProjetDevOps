@@ -10,11 +10,40 @@ from utils.appStyles import AppStyles
 from views.home_view import HomeView
 from views.student_view import StudentView
 
+def show_splash():
+    splash = tk.Tk()
+    splash.overrideredirect(True)
+    splash.configure(bg="#1e1e1e")
+
+    w, h = 420, 220
+    x = (splash.winfo_screenwidth() - w) // 2
+    y = (splash.winfo_screenheight() - h) // 2
+    splash.geometry(f"{w}x{h}+{x}+{y}")
+
+    tk.Label(
+        splash,
+        text="🎓 TripSchool",
+        font=("Segoe UI", 22, "bold"),
+        fg="white",
+        bg="#1e1e1e"
+    ).pack(pady=(45, 10))
+
+    tk.Label(
+        splash,
+        text="Chargement de l'application…",
+        font=("Segoe UI", 11),
+        fg="#cccccc",
+        bg="#1e1e1e"
+    ).pack()
+
+    splash.update()
+    return splash
+
 
 class MainApplication:
     def __init__(self):
         self.root = tk.Tk()
-
+        self.splash = show_splash()
         # ====================================================
         #  ICON PERSONNALISÉ (fenêtre + barre des tâches)
         # ====================================================
@@ -42,6 +71,7 @@ class MainApplication:
 
         self.setup_ui()
         self.show_home()
+        self.root.after(100, self.splash.destroy)
 
     # ====================================================
     #  UI PRINCIPALE
