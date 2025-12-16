@@ -61,74 +61,109 @@ jobs:
       with:
         files: pytrip-${{ steps.app_version.outputs.version }}-windows.zip
 
-    # 🔔 Discord — SUCCESS
+    # 🔔 Discord — SUCCESS (Version Moderne)
     - name: Notify Discord (success)
       if: success()
       run: |
+        # Configuration des liens et données
+        $repoUrl = "https://github.com/${{ github.repository }}"
+        $releaseUrl = "$repoUrl/releases/tag/${{ github.ref_name }}"
+        $commitUrl = "$repoUrl/commit/${{ github.sha }}"
+        $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+        
+        # Message du dernier commit (nettoyé)
+        $commitMsg = "${{ github.event.head_commit.message }}" -replace '"', '\"'
+        
+        # Construction du JSON complexe
         $payload = @{
-          username = "TripSchool CI"
+          username = "TripSchool Builder"
+          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png" # Icône Python générique (tu peux changer)
           embeds = @(
             @{
-              title = "🚀 Nouvelle release PyTrip"
-              description = "Version **${{ steps.app_version.outputs.version }}** disponible"
-              color = 3066993
+              author = @{
+                name = "Succès du déploiement : ${{ github.repository }}"
+                url = $repoUrl
+                icon_url = "https://github.com/${{ github.actor }}.png" # Avatar de celui qui a push
+              }
+              title = "🚀 Nouvelle version ${{ steps.app_version.outputs.version }} publiée !"
+              url = $releaseUrl
+              description = "La compilation Windows a réussi et la release a été créée automatiquement."
+              color = 5763719 # Vert agréable (Hex: #57F287)
+              thumbnail = @{
+                url = "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg" # Logo du projet (à personnaliser)
+              }
               fields = @(
                 @{
-                  name = "Repository"
-                  value = "${{ github.repository }}"
+                  name = "📦 Version"
+                  value = "`tag: ${{ github.ref_name }}`"
                   inline = $true
                 },
                 @{
-                  name = "Version"
+                  name = "👤 Auteur"
+                  value = "[${{ github.actor }}](https://github.com/${{ github.actor }})"
+                  inline = $true
+                },
+                @{
+                  name = "📝 Commit"
+                  value = "[$commitMsg]($commitUrl)"
+                  inline = $false
+                },
+                @{
+                  name = "📥 Téléchargement"
+                  value = "Click here to download: **[pytrip-${{ steps.app_version.outputs.version }}-windows.zip]($releaseUrl)**"
+                  inline = $false
+                }
+              )
+              footer = @{
+                text = "TripSchool CI • Windows-Latest"
+                icon_url = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+              }
+              timestamp = $timestamp
+            }
+          )
+        } | ConvertTo-Json -Depth 10
+
+        Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload
+
+    # 🔔 Discord — FAILURE (Version Moderne)
+    - name: Notify Discord (failure)
+      if: failure()
+      run: |
+        $repoUrl = "https://github.com/${{ github.repository }}"
+        $runUrl = "$repoUrl/actions/runs/${{ github.run_id }}"
+        $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+
+        $payload = @{
+          username = "TripSchool Builder"
+          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
+          embeds = @(
+            @{
+              author = @{
+                name = "Échec du déploiement"
+                icon_url = "https://github.com/${{ github.actor }}.png"
+              }
+              title = "❌ Le build a rencontré une erreur"
+              url = $runUrl
+              description = "La pipeline s'est arrêtée inopinément. Veuillez vérifier les logs ci-dessous."
+              color = 15548997 # Rouge vif (Hex: #ED4245)
+              fields = @(
+                @{
+                  name = "🚧 Version tentée"
                   value = "${{ steps.app_version.outputs.version }}"
                   inline = $true
                 },
                 @{
-                  name = "Téléchargement"
-                  value = "[Voir la release](https://github.com/${{ github.repository }}/releases/latest)"
+                  name = "🔍 Analyse"
+                  value = "[Voir les logs d'erreur sur GitHub]($runUrl)"
                   inline = $false
                 }
               )
               footer = @{
-                text = "GitHub Actions • CI/CD"
+                text = "TripSchool CI • Erreur critique"
               }
+              timestamp = $timestamp
             }
           )
-        } | ConvertTo-Json -Depth 5
+        } | ConvertTo-Json -Depth 10
 
-        Invoke-RestMethod `
-          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
-          -Method Post `
-          -ContentType "application/json" `
-          -Body $payload
-
-    # 🔔 Discord — FAILURE
-    - name: Notify Discord (failure)
-      if: failure()
-      run: |
-        $payload = @{
-          username = "TripSchool CI"
-          embeds = @(
-            @{
-              title = "❌ Build échoué"
-              description = "La pipeline pour la version **${{ steps.app_version.outputs.version }}** a échoué."
-              color = 15158332
-              fields = @(
-                @{
-                  name = "Logs"
-                  value = "[Voir GitHub Actions](https://github.com/${{ github.repository }}/actions)"
-                  inline = $false
-                }
-              )
-              footer = @{
-                text = "GitHub Actions • CI/CD"
-              }
-            }
-          )
-        } | ConvertTo-Json -Depth 5
-
-        Invoke-RestMethod `
-          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
-          -Method Post `
-          -ContentType "application/json" `
-          -Body $payload
+        Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload

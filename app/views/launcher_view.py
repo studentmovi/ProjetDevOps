@@ -220,6 +220,53 @@ class LauncherView:
         self.root.after(50, self.root.destroy)
 
     # -----------------------------------------------------
+    #  POPUP UPDATE CUSTOM
+    # -----------------------------------------------------
+    def show_update_popup(self, local, remote):
+        result = {"update": False}
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Mise à jour disponible")
+        popup.geometry("420x220")
+        popup.resizable(False, False)
+        popup.configure(bg="#1e1e1e")
+        popup.transient(self.root)
+        popup.grab_set()
+
+        tk.Label(
+            popup,
+            text="🚀 Nouvelle mise à jour disponible",
+            font=("Segoe UI", 13, "bold"),
+            fg="white",
+            bg="#1e1e1e",
+        ).pack(pady=(20, 10))
+
+        tk.Label(
+            popup,
+            text=f"Version actuelle : {local}\nNouvelle version : {remote}",
+            font=("Segoe UI", 10),
+            fg="#cccccc",
+            bg="#1e1e1e",
+            justify="center"
+        ).pack(pady=5)
+
+        btns = tk.Frame(popup, bg="#1e1e1e")
+        btns.pack(pady=25)
+
+        def accept():
+            result["update"] = True
+            popup.destroy()
+
+        def later():
+            popup.destroy()
+
+        ttk.Button(btns, text="🔄 Mettre à jour", command=accept).pack(side="left", padx=10)
+        ttk.Button(btns, text="⏰ Plus tard", command=later).pack(side="right", padx=10)
+
+        popup.wait_window()
+        return result["update"]
+
+    # -----------------------------------------------------
     #  RUN
     # -----------------------------------------------------
     def run(self):
