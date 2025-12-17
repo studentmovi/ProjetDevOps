@@ -3,45 +3,77 @@
     "sortie_theatre": {
       "id": "sortie_theatre",
       "nom": "Sortie Théâtre",
-      "date": "2025-12-16",
+      "date": "2025-12-17",
       "mois": "Novembre 2025",
       "cout_total": 15438.0,
       "participants": {
         "1": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "2": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "3": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "17": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "25": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "33": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "41": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
         },
         "42": {
-          "prix_base": 1929.75,
-          "prix_final": 1929.75
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "9": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "10": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "11": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "12": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "13": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "14": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "15": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
+        },
+        "16": {
+          "prix_base": 964.875,
+          "prix_final": 964.875
         }
       },
       "description": "Sortie au théâtre municipal",
-      "ventes_activees": false,
+      "ventes_activees": true,
       "total_ventes": 0.0,
       "categorie": "théâtre"
     },
@@ -229,28 +261,36 @@
       "concert"
     ],
     "9": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "10": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "11": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "12": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "13": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "14": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "15": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "16": [
-      "excursion_bruxelles"
+      "excursion_bruxelles",
+      "sortie_theatre"
     ],
     "17": [
       "sortie_theatre",

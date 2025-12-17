@@ -1,6 +1,20 @@
 {
-  "latest": "0.6.0",
+  "latest": "0.7.0",
   "releases": [
+    {
+      "version": "0.7.0",
+      "changes": [
+        "Fixed student list being cleared when applying event and month filters",
+        "Stabilized StudentViewController filtering logic",
+        "Fixed incorrect usage of EventDataManager.get_events() (list vs dict)",
+        "Removed duplicated cost calculation logic causing UI inconsistencies",
+        "Improved event name → event ID resolution across the application",
+        "Reworked event cost calculator to stay fully linked to events",
+        "Ensured cost calculation and sales are persisted correctly in events_assignments.json",
+        "Prevented silent UI resets when opening the cost calculator popup",
+        "General controller cleanup and stability improvements"
+      ]
+    },
     {
       "version": "0.6.0",
       "changes": [
