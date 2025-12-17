@@ -11,7 +11,7 @@
         "Forced update after a configurable delay (7 days)",
         "Background update check without blocking the UI",
         "Added splash screen when launching the main application",
-        "Improved launcher → main transition (no UI flash)",
+        "Improved launcher → main transition (no UI flash)"
       ]
     },
     {
