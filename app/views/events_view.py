@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox, filedialog
 
 from data.event_data_manager import event_manager
 from controller.EventExcelImportController import EventExcelImportController
+from popups.EventFormPopup import EventFormPopup
 
 
 class EventsView:
@@ -21,7 +22,7 @@ class EventsView:
     def create_widgets(self):
         self.frame.pack(fill="both", expand=True)
 
-        # ---------- TITRE ----------
+        # ---------- HEADER ----------
         header = self.styles.create_card_frame(self.frame, padding="15")
         header.pack(fill="x", pady=(10, 15))
 
@@ -38,13 +39,18 @@ class EventsView:
             command=self.create_event_popup
         ).pack(side="right")
 
-        # ---------- LISTE ----------
+        # ---------- LISTE DES ÉVÉNEMENTS ----------
         content = self.styles.create_card_frame(self.frame, padding="10")
         content.pack(fill="both", expand=True)
 
         columns = ("nom", "date", "categorie", "participants", "ventes")
 
-        self.tree = ttk.Treeview(content, columns=columns, show="headings", height=15)
+        self.tree = ttk.Treeview(
+            content,
+            columns=columns,
+            show="headings",
+            height=15
+        )
 
         self.tree.heading("nom", text="Nom")
         self.tree.heading("date", text="Date")
@@ -64,11 +70,21 @@ class EventsView:
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
+        # Double-clic = modification
+        self.tree.bind("<Double-1>", self.edit_selected_event)
+
         self.refresh_events()
 
         # ---------- ACTIONS ----------
         actions = self.styles.create_card_frame(self.frame, padding="10")
         actions.pack(fill="x", pady=10)
+
+        ttk.Button(
+            actions,
+            text="✏️ Modifier",
+            style="Secondary.TButton",
+            command=self.edit_selected_event
+        ).pack(side="left", padx=5)
 
         ttk.Button(
             actions,
@@ -85,7 +101,7 @@ class EventsView:
         ).pack(side="left", padx=5)
 
     # ====================================================
-    #  DATA
+    #  DONNÉES
     # ====================================================
     def refresh_events(self):
         self.tree.delete(*self.tree.get_children())
@@ -99,27 +115,49 @@ class EventsView:
                     event["nom"],
                     event["date"],
                     event.get("categorie", "—"),
-                    len(event["participants"]),
+                    len(event.get("participants", {})),
                     "✔️" if event.get("ventes_activees") else "❌"
                 )
             )
 
     # ====================================================
-    #  ACTIONS
+    #  ACTIONS ÉVÉNEMENTS
     # ====================================================
     def create_event_popup(self):
-        messagebox.showinfo(
-            "Nouvel événement",
-            "Création d’événement\n(Formulaire à venir)"
+        """Création d'un nouvel événement"""
+        EventFormPopup(
+            parent=self.frame,
+            on_save_callback=self.refresh_events
         )
 
+    def edit_selected_event(self, event=None):
+        """Modification d'un événement existant"""
+        selected = self.tree.focus()
+        if not selected:
+            messagebox.showwarning("Attention", "Sélectionne un événement")
+            return
+
+        event_data = event_manager.get_event(selected)
+        if not event_data:
+            messagebox.showerror("Erreur", "Événement introuvable")
+            return
+
+        EventFormPopup(
+            parent=self.frame,
+            on_save_callback=self.refresh_events,
+            event=event_data
+        )
+
+    # ====================================================
+    #  IMPORT / EXPORT
+    # ====================================================
     def import_excel(self):
         selected = self.tree.focus()
         if not selected:
             messagebox.showwarning("Attention", "Sélectionne un événement d’abord")
             return
 
-        # 👉 Le controller gère TOUT (popup structure + file dialog)
+        # Le controller gère popup + sélection fichier
         self.excel_importer.start_import_process(selected)
 
     def export_selected_event(self):
@@ -142,7 +180,7 @@ class EventsView:
             messagebox.showerror("Erreur", "Impossible d’exporter")
 
     # ====================================================
-    #  NAV
+    #  NAVIGATION
     # ====================================================
     def show(self):
         self.frame.pack(fill="both", expand=True)
