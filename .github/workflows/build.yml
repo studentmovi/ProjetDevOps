@@ -41,14 +41,16 @@ jobs:
     # ====================================================
     - name: Read app version
       id: app_version
+      shell: pwsh
       run: |
         $v = Get-Content app/version.txt
-        echo "version=$v" >> $env:GITHUB_OUTPUT
+        "version=$v" >> $env:GITHUB_OUTPUT
 
     # ====================================================
     #  BUILD MAIN
     # ====================================================
     - name: Build main.exe
+      shell: pwsh
       run: |
         pyinstaller --onefile --noconsole `
           --add-data "app/assets;assets" `
@@ -60,6 +62,7 @@ jobs:
     #  BUILD LAUNCHER
     # ====================================================
     - name: Build launcher.exe
+      shell: pwsh
       run: |
         pyinstaller --onefile --noconsole `
           --add-data "app/assets;assets" `
@@ -71,19 +74,23 @@ jobs:
     #  RELEASE FOLDER
     # ====================================================
     - name: Prepare release folder
+      shell: pwsh
       run: |
-        mkdir release
-        copy dist\main.exe release\
-        copy dist\launcher.exe release\
-        copy app\version.txt release\
-        copy app\changelog.json release\
+        New-Item -ItemType Directory -Force release | Out-Null
+        Copy-Item dist\main.exe release\
+        Copy-Item dist\launcher.exe release\
+        Copy-Item app\version.txt release\
+        Copy-Item app\changelog.json release\
 
     # ====================================================
     #  ZIP
     # ====================================================
     - name: Create ZIP archive
+      shell: pwsh
       run: |
-        Compress-Archive -Path release -DestinationPath pytrip-${{ steps.app_version.outputs.version }}-windows.zip
+        Compress-Archive `
+          -Path release `
+          -DestinationPath "pytrip-${{ steps.app_version.outputs.version }}-windows.zip"
 
     # ====================================================
     #  GITHUB RELEASE
@@ -98,6 +105,7 @@ jobs:
     # ====================================================
     - name: Notify Discord (success)
       if: success()
+      shell: pwsh
       run: |
         $repoUrl = "https://github.com/${{ github.repository }}"
         $releaseUrl = "$repoUrl/releases/tag/${{ github.ref_name }}"
@@ -126,13 +134,18 @@ jobs:
           )
         } | ConvertTo-Json -Depth 10
 
-        Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload
+        Invoke-RestMethod `
+          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body $payload
 
     # ====================================================
     #  DISCORD — FAILURE
     # ====================================================
     - name: Notify Discord (failure)
       if: failure()
+      shell: pwsh
       run: |
         $runUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -150,4 +163,8 @@ jobs:
           )
         } | ConvertTo-Json -Depth 10
 
-        Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload
+        Invoke-RestMethod `
+          -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" `
+          -Method Post `
+          -ContentType "application/json" `
+          -Body $payload
