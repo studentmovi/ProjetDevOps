@@ -115,7 +115,6 @@ jobs:
 
         $payload = @{
           username = "TripSchool Builder"
-          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
           embeds = @(
             @{
               title = "🚀 Nouvelle version ${{ steps.app_version.outputs.version }} publiée"
