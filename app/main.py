@@ -16,6 +16,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils.appStyles import AppStyles
 from views.home_view import HomeView
 from views.student_view import StudentView
+from views.events_view import EventsView
+
 
 
 # ====================================================
@@ -263,7 +265,10 @@ class MainApplication:
                 self.views[name] = HomeView(self.content_frame, self.styles)
             elif name == "students":
                 self.views[name] = StudentView(self.content_frame, self.styles)
+            elif name == "events":
+                self.views[name] = EventsView(self.content_frame, self.styles)
 
+            # ⚠️ create_widgets doit être appelé UNE SEULE FOIS
             if hasattr(self.views[name], "create_widgets"):
                 self.views[name].create_widgets()
 
@@ -272,7 +277,7 @@ class MainApplication:
 
     def show_home(self): self.switch_view("home")
     def show_students(self): self.switch_view("students")
-    def show_events(self): messagebox.showinfo("📅 Événements", "À développer")
+    def show_events(self): self.switch_view("events")
     def show_settings(self): messagebox.showinfo("⚙️ Paramètres", "À développer")
 
     # ====================================================
