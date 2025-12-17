@@ -183,6 +183,43 @@ class EventDataManager:
         if event_id in self.events_data["events"]:
             return self.events_data["events"][event_id]["participants"]
         return {}
+    def create_event(self, event_data):
+        event_id = event_data["id"]
+
+        if event_id in self.events_data["events"]:
+            raise ValueError("Un événement avec cet ID existe déjà")
+
+        # Sécurisation des champs obligatoires
+        event_data.setdefault("participants", {})
+        event_data.setdefault("ventes_activees", False)
+        event_data.setdefault("total_ventes", 0.0)
+        event_data.setdefault("description", "")
+
+        self.events_data["events"][event_id] = event_data
+        self.save_data()
+
+    def update_event(self, event_id, updated_data):
+        if event_id not in self.events_data["events"]:
+            raise ValueError("Événement introuvable")
+
+        event = self.events_data["events"][event_id]
+
+        # Champs modifiables uniquement
+        allowed_fields = [
+            "nom",
+            "date",
+            "categorie",
+            "cout_total",
+            "description",
+            "ventes_activees"
+        ]
+
+        for field in allowed_fields:
+            if field in updated_data:
+                event[field] = updated_data[field]
+
+        self.calculate_event_prices(event_id)
+        self.save_data()
 
 # Instance globale
 event_manager = EventDataManager()
