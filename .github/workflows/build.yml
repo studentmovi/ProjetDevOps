@@ -118,15 +118,15 @@ jobs:
           avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
           embeds = @(
             @{
-              title = "🚀 Nouvelle version ${{ steps.app_version.outputs.version }} publiée !"
+              title = "🚀 Nouvelle version ${{ steps.app_version.outputs.version }} publiée"
               url = $releaseUrl
-              description = "La compilation Windows a réussi et la release a été créée automatiquement."
+              description = "Build Windows terminé avec succès et release créée automatiquement."
               color = 5763719
               fields = @(
-                @{ name="📦 Version"; value="`${{ github.ref_name }}`"; inline=$true },
-                @{ name="👤 Auteur"; value="${{ github.actor }}"; inline=$true },
-                @{ name="📝 Commit"; value="[$commitMsg]($commitUrl)"; inline=$false },
-                @{ name="📥 Téléchargement"; value="[Télécharger la version Windows]($releaseUrl)"; inline=$false }
+                @{ name="Version"; value="${{ github.ref_name }}"; inline=$true },
+                @{ name="Auteur"; value="${{ github.actor }}"; inline=$true },
+                @{ name="Commit"; value="[$commitMsg]($commitUrl)"; inline=$false },
+                @{ name="Téléchargement"; value="[Télécharger la version Windows]($releaseUrl)"; inline=$false }
               )
               footer = @{ text="TripSchool CI • Windows" }
               timestamp = $timestamp
@@ -141,23 +141,33 @@ jobs:
           -Body $payload
 
     # ====================================================
-    #  DISCORD — FAILURE
+    #  DISCORD — FAILURE (DÉTAILLÉ)
     # ====================================================
     - name: Notify Discord (failure)
       if: failure()
       shell: pwsh
       run: |
-        $runUrl = "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        $repoUrl = "https://github.com/${{ github.repository }}"
+        $runUrl = "$repoUrl/actions/runs/${{ github.run_id }}"
+        $commitUrl = "$repoUrl/commit/${{ github.sha }}"
         $timestamp = [System.DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
 
         $payload = @{
           username = "TripSchool Builder"
+          avatar_url = "https://cdn-icons-png.flaticon.com/512/919/919833.png"
           embeds = @(
             @{
-              title = "❌ Build échoué"
-              description = "[Voir les logs]($runUrl)"
+              title = "❌ Build Windows échoué"
+              description = "Le pipeline GitHub Actions a échoué. Voir les détails ci-dessous."
               color = 15548997
-              footer = @{ text="TripSchool CI • Erreur" }
+              fields = @(
+                @{ name="Repository"; value="${{ github.repository }}"; inline=$true },
+                @{ name="Branche / Tag"; value="${{ github.ref_name }}"; inline=$true },
+                @{ name="Auteur"; value="${{ github.actor }}"; inline=$true },
+                @{ name="Commit"; value="[Voir le commit]($commitUrl)"; inline=$false },
+                @{ name="Logs du build"; value="[Ouvrir le run GitHub Actions]($runUrl)"; inline=$false }
+              )
+              footer = @{ text="TripSchool CI • Failure" }
               timestamp = $timestamp
             }
           )
