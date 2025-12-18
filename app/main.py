@@ -17,8 +17,8 @@ from utils.appStyles import AppStyles
 from views.home_view import HomeView
 from views.student_view import StudentView
 from views.events_view import EventsView
-
-
+from controller.ExeclImportController import ExcelImportController
+from popups.EventFormPopup import EventFormPopup
 
 # ====================================================
 #  MODE
@@ -226,6 +226,8 @@ class MainApplication:
 
         self.current_view = None
         self.views = {}
+        # Controller import Excel élèves
+        self.excel_import_controller = ExcelImportController(self.root)
 
         self.setup_ui()
         self.show_home()
@@ -262,7 +264,7 @@ class MainApplication:
 
         if name not in self.views:
             if name == "home":
-                self.views[name] = HomeView(self.content_frame, self.styles)
+                self.views[name] = HomeView(self.content_frame, self.styles, self)
             elif name == "students":
                 self.views[name] = StudentView(self.content_frame, self.styles)
             elif name == "events":
@@ -279,6 +281,24 @@ class MainApplication:
     def show_students(self): self.switch_view("students")
     def show_events(self): self.switch_view("events")
     def show_settings(self): messagebox.showinfo("⚙️ Paramètres", "À développer")
+    # ====================================================
+    #  MÉTHODES APPELÉES PAR HOMEVIEW
+    # ====================================================
+    def open_students_from_home(self):
+        self.show_students()
+
+    def import_students_excel(self):
+        self.excel_import_controller.start_import_process()
+
+    def create_event_from_home(self):
+        EventFormPopup(
+            self.root,
+            on_save_callback=self.refresh_home_after_event
+        )
+
+    def refresh_home_after_event(self):
+        if "home" in self.views:
+            self.views["home"].create_widgets()
 
     # ====================================================
     #  VERSION
