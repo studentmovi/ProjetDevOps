@@ -1,9 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from component.Button import StyledButton as Button
 
 
 class ExcelEventStructureInfoPopup:
@@ -15,83 +11,123 @@ class ExcelEventStructureInfoPopup:
     def show(self):
         self.popup = tk.Toplevel(self.parent)
         self.popup.title("Structure du fichier Excel (Événements)")
-        self.popup.geometry("560x420")
+        self.popup.geometry("720x560")
         self.popup.resizable(False, False)
         self.popup.transient(self.parent)
         self.popup.grab_set()
 
-        # Centrer
-        self.popup.update_idletasks()
-        x = (self.popup.winfo_screenwidth() // 2) - (560 // 2)
-        y = (self.popup.winfo_screenheight() // 2) - (420 // 2)
-        self.popup.geometry(f"560x420+{x}+{y}")
+        # Fermer avec Échap
+        self.popup.bind("<Escape>", lambda e: self.popup.destroy())
 
         self._create_widgets()
 
     def _create_widgets(self):
-        main_frame = ttk.Frame(self.popup, padding="20")
-        main_frame.pack(fill="both", expand=True)
+        # ===== CONTENEUR PRINCIPAL =====
+        container = ttk.Frame(self.popup)
+        container.pack(fill="both", expand=True)
 
-        title_label = ttk.Label(
-            main_frame,
-            text="📋 Structure du fichier Excel pour l'import des participants (événements)",
-            font=("Arial", 13, "bold")
+        # ===== ZONE SCROLLABLE =====
+        canvas = tk.Canvas(container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+
+        scroll_frame = ttk.Frame(canvas, padding=20)
+
+        scroll_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
-        title_label.pack(pady=(0, 15))
 
-        info_frame = ttk.LabelFrame(main_frame, text="Instructions", padding="15")
-        info_frame.pack(fill="x", pady=(0, 15))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-        instructions = [
-            "📄 Le fichier doit être au format .xlsx",
-            "📌 Le fichier doit contenir une feuille nommée : participants",
-            "📊 Colonnes obligatoires : student_id",
-            "✅ Colonnes optionnelles : classe, annee (au moins une des deux conseillée)",
-            "⚠️ Les IDs inconnus seront ignorés automatiquement"
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # ===== CONTENU =====
+        ttk.Label(
+            scroll_frame,
+            text="📋 Import Excel — Événements",
+            font=("Arial", 14, "bold")
+        ).pack(anchor="w", pady=(0, 10))
+
+        ttk.Label(
+            scroll_frame,
+            text="Le fichier Excel doit respecter la structure suivante :",
+            font=("Arial", 10)
+        ).pack(anchor="w")
+
+        # Colonnes
+        cols_required = [
+            "id (unique, sans espaces)",
+            "nom",
+            "date (YYYY-MM-DD)",
+            "categorie",
+            "cout_total (nombre)"
         ]
-        for it in instructions:
-            ttk.Label(info_frame, text=it, font=("Arial", 10)).pack(anchor="w", pady=2)
 
-        example_frame = ttk.LabelFrame(main_frame, text="Exemple", padding="15")
-        example_frame.pack(fill="x", pady=(0, 15))
+        cols_optional = [
+            "ventes_activees (TRUE / FALSE)",
+            "description",
+            "student_id (1 élève précis)",
+            "classe (ex : 3A)",
+            "annee (ex : 3)"
+        ]
+
+        box_req = ttk.LabelFrame(scroll_frame, text="Colonnes obligatoires", padding=10)
+        box_req.pack(fill="x", pady=(10, 5))
+        for c in cols_required:
+            ttk.Label(box_req, text=f"• {c}").pack(anchor="w")
+
+        box_opt = ttk.LabelFrame(scroll_frame, text="Colonnes optionnelles", padding=10)
+        box_opt.pack(fill="x", pady=(5, 10))
+        for c in cols_optional:
+            ttk.Label(box_opt, text=f"• {c}").pack(anchor="w")
+
+        # Exemple
+        example_frame = ttk.LabelFrame(scroll_frame, text="Exemple de fichier Excel", padding=10)
+        example_frame.pack(fill="x", pady=(10, 10))
 
         example_text = (
-            "student_id | annee | classe\n"
-            "17         | 3     | 3A\n"
-            "18         | 3     | 3A\n"
-            "25         | 4     | 4A"
+            "id              | nom             | date       | categorie | cout_total | classe\n"
+            "sortie_theatre  | Sortie Théâtre  | 2025-11-15 | théâtre   | 450        | 3A\n"
+            "voyage_paris    | Voyage Paris    | 2025-12-10 | voyage    | 1200       | 5\n"
+            "concert_noel    | Concert Noël    | 2025-12-20 | concert   | 600        |"
         )
 
         ttk.Label(
             example_frame,
             text=example_text,
-            font=("Courier", 10),
+            font=("Courier New", 9),
             justify="left"
         ).pack(anchor="w")
 
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(side="bottom", fill="x")
+        ttk.Label(
+            scroll_frame,
+            text=(
+                "ℹ️ Une ligne = un événement\n"
+                "ℹ️ Les participants sont ajoutés automatiquement si student_id, classe ou annee est présent\n"
+                "⚠️ Si l'ID existe déjà, l'événement sera ignoré"
+            ),
+            font=("Arial", 9)
+        ).pack(anchor="w", pady=(10, 20))
 
-        cancel_btn = Button(
-            button_frame,
+        # ===== BOUTONS FIXÉS EN BAS =====
+        btns = ttk.Frame(self.popup, padding=10)
+        btns.pack(fill="x")
+
+        ttk.Button(
+            btns,
             text="Annuler",
-            command=self._on_cancel,
-            style="secondary"
-        )
-        cancel_btn.pack(side="right", padx=(10, 0))
+            command=self.popup.destroy
+        ).pack(side="right", padx=5)
 
-        continue_btn = Button(
-            button_frame,
-            text="Continuer l'import",
-            command=self._on_continue,
-            style="primary"
-        )
-        continue_btn.pack(side="right")
+        ttk.Button(
+            btns,
+            text="Importer",
+            command=self._import
+        ).pack(side="right")
 
-    def _on_cancel(self):
-        self.popup.destroy()
-
-    def _on_continue(self):
+    def _import(self):
         self.popup.destroy()
         if self.callback:
             self.callback()

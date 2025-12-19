@@ -88,7 +88,7 @@ class EventsView:
 
         ttk.Button(
             actions,
-            text="📥 Import Excel (participants)",
+            text="📥 Import Excel",
             style="Secondary.TButton",
             command=self.import_excel
         ).pack(side="left", padx=5)
@@ -152,14 +152,7 @@ class EventsView:
     #  IMPORT / EXPORT
     # ====================================================
     def import_excel(self):
-        selected = self.tree.focus()
-        if not selected:
-            messagebox.showwarning("Attention", "Sélectionne un événement d’abord")
-            return
-
-        # Le controller gère popup + sélection fichier
-        self.excel_importer.start_import_process(selected)
-
+        self.excel_importer.start_import_process()
     def export_selected_event(self):
         selected = self.tree.focus()
         if not selected:
