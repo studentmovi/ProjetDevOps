@@ -1,6 +1,18 @@
 {
-  "latest": "0.7.0",
+  "latest": "0.7.1",
   "releases": [
+    {
+      "version": "0.7.1",
+      "changes": [
+        "Added student detail view accessible via double-click",
+        "Implemented in-year student class and year editing",
+        "Refactored StudentView and StudentViewController to enforce MVC separation",
+        "Moved all filtering and business logic out of the view layer",
+        "Ensured student updates persist correctly across JSON and Excel data sources",
+        "Improved student list refresh and selection stability",
+        "General controller and UI cleanup for maintainability"
+      ]
+    },
     {
       "version": "0.7.0",
       "changes": [

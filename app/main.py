@@ -280,7 +280,7 @@ class MainApplication:
     def show_home(self): self.switch_view("home")
     def show_students(self): self.switch_view("students")
     def show_events(self): self.switch_view("events")
-    def show_settings(self): messagebox.showinfo("⚙️ Paramètres", "À développer")
+    def show_settings(self): messagebox.showinfo("⚙️ Paramètres", "En cours de développement…")
     # ====================================================
     #  MÉTHODES APPELÉES PAR HOMEVIEW
     # ====================================================
