@@ -3,7 +3,7 @@
     "sortie_theatre": {
       "id": "sortie_theatre",
       "nom": "Sortie Théâtre",
-      "date": "2025-12-17",
+      "date": "2025-12-18",
       "mois": "Novembre 2025",
       "cout_total": 15438.0,
       "participants": {
@@ -80,7 +80,7 @@
     "visite_musee": {
       "id": "visite_musee",
       "nom": "Visite Musée",
-      "date": "2025-11-20",
+      "date": "2025-12-17",
       "mois": "Novembre 2025",
       "cout_total": 320.0,
       "participants": {
@@ -119,12 +119,13 @@
       },
       "description": "Visite du musée d'histoire",
       "ventes_activees": false,
-      "total_ventes": 0.0
+      "total_ventes": 0.0,
+      "categorie": "musée"
     },
     "concert": {
       "id": "concert",
       "nom": "Concert",
-      "date": "2025-11-25",
+      "date": "2025-12-17",
       "mois": "Novembre 2025",
       "cout_total": 600.0,
       "participants": {
@@ -155,12 +156,13 @@
       },
       "description": "Concert de musique classique",
       "ventes_activees": true,
-      "total_ventes": 67.5
+      "total_ventes": 67.5,
+      "categorie": "concert"
     },
     "voyage_paris": {
       "id": "voyage_paris",
       "nom": "Voyage Paris",
-      "date": "2025-12-10",
+      "date": "2025-12-17",
       "mois": "Décembre 2025",
       "cout_total": 1200.0,
       "participants": {
@@ -191,12 +193,13 @@
       },
       "description": "Voyage scolaire à Paris - 3 jours",
       "ventes_activees": false,
-      "total_ventes": 0.0
+      "total_ventes": 0.0,
+      "categorie": "voyage"
     },
     "excursion_bruxelles": {
       "id": "excursion_bruxelles",
       "nom": "Excursion Bruxelles",
-      "date": "2025-12-05",
+      "date": "2025-12-17",
       "mois": "Décembre 2025",
       "cout_total": 280.0,
       "participants": {
@@ -235,7 +238,8 @@
       },
       "description": "Visite du Parlement européen",
       "ventes_activees": false,
-      "total_ventes": 0.0
+      "total_ventes": 0.0,
+      "categorie": "autre"
     }
   },
   "student_events": {

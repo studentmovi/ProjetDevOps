@@ -15,9 +15,10 @@ from data.sample_data import get_students_data_source
 class HomeView:
     """Vue d'accueil de l'application"""
     
-    def __init__(self, root, styles):
+    def __init__(self, root, styles, app_controller):
         self.root = root
         self.styles = styles
+        self.app_controller = app_controller
         self.frame = None
         self.event_manager = event_manager
 
@@ -581,18 +582,24 @@ class HomeView:
     # ========== CALLBACKS ==========
     def _open_students_view(self):
         """Ouvre la vue des élèves"""
+        self.app_controller.open_students_from_home()
         print("🎯 Ouverture de la vue élèves...")
     
     def _import_excel(self):
-        """Lance l'import Excel"""
+        from popups.ExcelImportChoicePopup import ExcelImportChoicePopup
         from tkinter import messagebox
-        messagebox.showinfo("📊 Import Excel", "Fonctionnalité d'import Excel\n(À développer)")
-    
+        ExcelImportChoicePopup(
+            self.root,
+            on_students=self.app_controller.import_students_excel,
+            on_events=lambda: messagebox.showinfo(
+                "Info",
+                "L'import des participants se fait depuis la page événements"
+            )
+        )
+
     def _create_event(self):
         """Crée un nouvel événement"""
-        from tkinter import messagebox
-        messagebox.showinfo("📅 Nouvel Événement", "Création d'événement\n(À développer)")
-    
+        self.app_controller.create_event_from_home()
     def _export_data(self):
         """Exporte les données"""
         from tkinter import messagebox
