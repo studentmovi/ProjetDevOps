@@ -1,0 +1,148 @@
+{
+  "students": [
+    {
+      "id": 1,
+      "nom": "Dupont",
+      "prenom": "Alice",
+      "classe": "1A",
+      "annee": "1",
+      "email": "alice.dupont@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 2,
+      "nom": "Martin",
+      "prenom": "Pierre",
+      "classe": "1B",
+      "annee": "1",
+      "email": "pierre.martin@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 3,
+      "nom": "Bernard",
+      "prenom": "Sophie",
+      "classe": "1C",
+      "annee": "1",
+      "email": "sophie.bernard@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 4,
+      "nom": "Petit",
+      "prenom": "Lucas",
+      "classe": "1D",
+      "annee": "1",
+      "email": "lucas.petit@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 5,
+      "nom": "Durand",
+      "prenom": "Léa",
+      "classe": "2A",
+      "annee": "2",
+      "email": "lea.durand@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 6,
+      "nom": "Moreau",
+      "prenom": "Thomas",
+      "classe": "2B",
+      "annee": "2",
+      "email": "thomas.moreau@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 7,
+      "nom": "Simon",
+      "prenom": "Maxime",
+      "classe": "2C",
+      "annee": "2",
+      "email": "maxime.simon@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 8,
+      "nom": "Michel",
+      "prenom": "Clara",
+      "classe": "2D",
+      "annee": "2",
+      "email": "clara.michel@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 9,
+      "nom": "Roux",
+      "prenom": "Inès",
+      "classe": "3A",
+      "annee": "3",
+      "email": "ines.roux@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 10,
+      "nom": "David",
+      "prenom": "Antoine",
+      "classe": "3B",
+      "annee": "3",
+      "email": "antoine.david@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 11,
+      "nom": "Bertrand",
+      "prenom": "Sarah",
+      "classe": "3C",
+      "annee": "3",
+      "email": "sarah.bertrand@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 12,
+      "nom": "Morel",
+      "prenom": "Julien",
+      "classe": "3D",
+      "annee": "3",
+      "email": "julien.morel@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 13,
+      "nom": "Girard",
+      "prenom": "Louis",
+      "classe": "4A",
+      "annee": "4",
+      "email": "louis.girard@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 14,
+      "nom": "Bonnet",
+      "prenom": "Zoé",
+      "classe": "4B",
+      "annee": "4",
+      "email": "zoe.bonnet@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 15,
+      "nom": "Lambert",
+      "prenom": "Chloé",
+      "classe": "4C",
+      "annee": "4",
+      "email": "chloe.lambert@ecole.be",
+      "source": "excel"
+    },
+    {
+      "id": 16,
+      "nom": "Fontaine",
+      "prenom": "Adam",
+      "classe": "4D",
+      "annee": "4",
+      "email": "adam.fontaine@ecole.be",
+      "source": "excel"
+    }
+  ]
+}

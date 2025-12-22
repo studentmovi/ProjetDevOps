@@ -1,10 +1,12 @@
 import json
 import os
 from datetime import datetime
+from utils.data_path_resolver import DataPathResolver
 
 class EventDataManager:
     def __init__(self):
-        self.data_file = "data/events_assignments.json"
+        resolver = DataPathResolver()
+        self.data_file = resolver.get_file("events_assignments.json")
         self.events_data = self.load_data()
     
     def load_data(self):

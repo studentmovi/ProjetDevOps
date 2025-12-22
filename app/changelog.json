@@ -1,6 +1,21 @@
 {
-  "latest": "0.7.1",
+  "latest": "0.8.0",
   "releases": [
+    {
+      "version": "0.8.0",
+      "changes": [
+        "Added a complete Settings page accessible from the main navigation",
+        "Implemented global font management with live preview and persistence",
+        "Introduced centralized FontManager applied across the entire application",
+        "Added event category filtering in Student view",
+        "Introduced dynamic filter population (years, classes, events, months)",
+        "Improved StudentViewController robustness for mixed data formats",
+        "Stabilized student filtering with category → event cascade logic",
+        "Improved student list consistency after Excel import",
+        "Refined filter reset behavior and UI refresh logic",
+        "General StudentView, SettingsView and controller cleanup"
+      ]
+    },
     {
       "version": "0.7.1",
       "changes": [

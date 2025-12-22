@@ -1,9 +1,12 @@
 import json
 import os
 
+from utils.data_path_resolver import DataPathResolver
+
 class StudentDataManager:
     def __init__(self):
-        self.data_file = os.path.join(os.path.dirname(__file__), 'students_data.json')
+        resolver = DataPathResolver()
+        self.data_file = resolver.get_file("students_data.json")
         self.students = []
         self.load_data()
         
