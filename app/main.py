@@ -13,18 +13,25 @@ import subprocess
 # Ajout du chemin pour les imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# ===== Utils =====
 from utils.appStyles import AppStyles
+from utils.font_manager import FontManager   # 🔤 FONT MANAGER
+
+# ===== Views =====
 from views.home_view import HomeView
 from views.student_view import StudentView
 from views.events_view import EventsView
-from controller.ExeclImportController import ExcelImportController
+from views.settings_view import SettingsView
+
+# ===== Controllers / Popups =====
+from controller.ExcelImportController import ExcelImportController
 from popups.EventFormPopup import EventFormPopup
+
 
 # ====================================================
 #  MODE
 # ====================================================
 DEV_MODE = not getattr(sys, "frozen", False)
-
 
 # ====================================================
 #  CONFIG MAJ
@@ -70,15 +77,19 @@ def show_splash(root):
     splash.geometry(f"{w}x{h}+{x}+{y}")
 
     tk.Label(
-        splash, text="🎓 TripSchool",
+        splash,
+        text="🎓 TripSchool",
         font=("Segoe UI", 22, "bold"),
-        fg="white", bg="#1e1e1e"
+        fg="white",
+        bg="#1e1e1e"
     ).pack(pady=(45, 10))
 
     tk.Label(
-        splash, text="Chargement de l'application…",
+        splash,
+        text="Chargement de l'application…",
         font=("Segoe UI", 11),
-        fg="#cccccc", bg="#1e1e1e"
+        fg="#cccccc",
+        bg="#1e1e1e"
     ).pack()
 
     splash.update()
@@ -86,157 +97,61 @@ def show_splash(root):
 
 
 # ====================================================
-#  POPUP MAJ CUSTOM
-# ====================================================
-def update_popup_custom(root, local, remote, force):
-    result = {"action": "later"}
-
-    popup = tk.Toplevel(root)
-    popup.title("Mise à jour disponible")
-    popup.resizable(False, False)
-    popup.transient(root)
-    popup.grab_set()
-
-    w, h = 460, 260
-    x = (popup.winfo_screenwidth() - w) // 2
-    y = (popup.winfo_screenheight() - h) // 2
-    popup.geometry(f"{w}x{h}+{x}+{y}")
-
-    # Croix = rappeler plus tard
-    def close_later():
-        popup.destroy()
-
-    popup.protocol("WM_DELETE_WINDOW", close_later)
-
-    # ===== Styles =====
-    BG = "#f8fafc"        # blanc cassé
-    BLUE = "#2563eb"      # bleu moderne
-    DARK = "#0f172a"      # texte foncé
-    MUTED = "#475569"     # texte secondaire
-
-    popup.configure(bg=BG)
-
-    style = ttk.Style(popup)
-    style.configure(
-        "Update.TButton",
-        font=("Segoe UI", 10, "bold"),
-        padding=(12, 8)
-    )
-
-    # ===== Conteneur principal =====
-    frame = tk.Frame(popup, bg=BG, padx=24, pady=20)
-    frame.pack(fill="both", expand=True)
-
-    # ===== Titre =====
-    tk.Label(
-        frame,
-        text="Une nouvelle version est disponible",
-        font=("Segoe UI", 14, "bold"),
-        fg=DARK,
-        bg=BG
-    ).pack(anchor="w", pady=(0, 10))
-
-    # ===== Versions =====
-    tk.Label(
-        frame,
-        text=f"Version actuelle : {local}",
-        font=("Segoe UI", 10),
-        fg=MUTED,
-        bg=BG
-    ).pack(anchor="w")
-
-    tk.Label(
-        frame,
-        text=f"Nouvelle version : {remote}",
-        font=("Segoe UI", 10, "bold"),
-        fg=BLUE,
-        bg=BG
-    ).pack(anchor="w", pady=(0, 15))
-
-    # ===== Message forcé =====
-    if force:
-        tk.Label(
-            frame,
-            text="⚠️ Cette mise à jour est obligatoire",
-            font=("Segoe UI", 10, "bold"),
-            fg="#dc2626",
-            bg=BG
-        ).pack(anchor="w", pady=(0, 10))
-
-    # ===== Boutons =====
-    btns = tk.Frame(frame, bg=BG)
-    btns.pack(fill="x", pady=(20, 0))
-
-    def do_update():
-        result["action"] = "update"
-        popup.destroy()
-
-    # Bouton rappeler plus tard
-    ttk.Button(
-        btns,
-        text="⏰ Me le rappeler plus tard",
-        style="Update.TButton",
-        command=close_later
-    ).pack(side="left")
-
-    # Bouton MAJ
-    ttk.Button(
-        btns,
-        text="⏫ Mettre à jour maintenant",
-        style="Update.TButton",
-        command=do_update
-    ).pack(side="right")
-
-    # ===== Footer =====
-    tk.Label(
-        frame,
-        text="TripSchool • Mise à jour sécurisée",
-        font=("Segoe UI", 9),
-        fg="#94a3b8",
-        bg=BG
-    ).pack(side="bottom", pady=(15, 0))
-
-    root.wait_window(popup)
-    return result["action"]
-
-
-# ====================================================
 #  APPLICATION PRINCIPALE
 # ====================================================
 class MainApplication:
     def __init__(self):
+        # ====================================================
+        #  ROOT
+        # ====================================================
         self.root = tk.Tk()
+
+        # 🔤 POLICE GLOBALE (ICI ET NULLE PART AILLEURS)
+        self.font_manager = FontManager(self.root)
+
+        # Splash
         self.splash = show_splash(self.root)
 
         # Icône
         icon = os.path.join(os.path.dirname(__file__), "assets", "logo.ico")
         try:
             self.root.iconbitmap(icon)
-        except:
+        except Exception:
             pass
 
-        # Styles
+        # ====================================================
+        #  STYLES (COULEURS / LAYOUT)
+        # ====================================================
         self.styles = AppStyles()
         self.styles.configure_ttk_style(self.root)
         self.styles.configure_window(self.root, "🎓 TripSchool - Gestion Événements")
 
+        # Fenêtre
         self.root.geometry("1400x900")
         self.root.minsize(1200, 700)
         self.root.state("zoomed")
 
+        # ====================================================
+        #  NAVIGATION
+        # ====================================================
         self.current_view = None
         self.views = {}
-        # Controller import Excel élèves
+
+        # Controller Excel global (home)
         self.excel_import_controller = ExcelImportController(self.root)
 
+        # UI
         self.setup_ui()
         self.show_home()
 
+        # Fin splash
         self.root.after(100, self.splash.destroy)
+
+        # Update
         self.check_update_background()
 
     # ====================================================
-    #  UI (INCHANGÉE)
+    #  UI
     # ====================================================
     def setup_ui(self):
         nav = self.styles.create_header_frame(self.root, padding="10")
@@ -269,8 +184,10 @@ class MainApplication:
                 self.views[name] = StudentView(self.content_frame, self.styles)
             elif name == "events":
                 self.views[name] = EventsView(self.content_frame, self.styles)
+            elif name == "settings":
+                from views.settings_view import SettingsView
+                self.views[name] = SettingsView(self.content_frame, self.styles, self)
 
-            # ⚠️ create_widgets doit être appelé UNE SEULE FOIS
             if hasattr(self.views[name], "create_widgets"):
                 self.views[name].create_widgets()
 
@@ -280,9 +197,10 @@ class MainApplication:
     def show_home(self): self.switch_view("home")
     def show_students(self): self.switch_view("students")
     def show_events(self): self.switch_view("events")
-    def show_settings(self): messagebox.showinfo("⚙️ Paramètres", "En cours de développement…")
+    def show_settings(self): self.switch_view("settings")
+
     # ====================================================
-    #  MÉTHODES APPELÉES PAR HOMEVIEW
+    #  HOME CALLBACKS
     # ====================================================
     def open_students_from_home(self):
         self.show_students()
@@ -317,11 +235,11 @@ class MainApplication:
             url = "https://raw.githubusercontent.com/studentmovi/ProjetDevOps/main/app/version.txt"
             r = requests.get(url, timeout=5)
             return r.text.strip() if r.status_code == 200 else None
-        except:
+        except Exception:
             return None
 
     # ====================================================
-    #  MISE À JOUR
+    #  UPDATE
     # ====================================================
     def check_update_background(self):
         threading.Thread(target=self.check_update, daemon=True).start()
@@ -334,10 +252,10 @@ class MainApplication:
 
         state = get_update_state()
         force = should_force_update(state)
-
         self.root.after(0, lambda: self.show_update_popup(local, remote, force))
 
     def show_update_popup(self, local, remote, force):
+        from popups.update_popup import update_popup_custom
         state = get_update_state()
         action = update_popup_custom(self.root, local, remote, force)
 
