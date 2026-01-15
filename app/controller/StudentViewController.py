@@ -9,7 +9,7 @@ from popups.AssignEventPopup import AssignEventPopup
 from popups.CostCalculatorPopup import CostCalculatorPopup
 from controller.ExcelImportController import ExcelImportController
 
-from utils.date_utils import parse_event_date   # ✅ IMPORTANT
+from utils.date_utils import parse_event_date
 
 
 class StudentViewController:
@@ -18,19 +18,21 @@ class StudentViewController:
     - Source de vérité : JSON (StudentDataManager)
     - Import Excel possible
     - Filtres dynamiques (année, classe, catégorie, événement, mois)
+    - Sélection d'élèves + actions (assign event, calculate cost, details)
     """
 
     def __init__(self, view):
         self.view = view
 
         self.student_manager = StudentDataManager()
-        self.event_manager = event_manager
+        self.event_manager = event_manager  # OK pour les filtres/assign
+
         root = self.view.frame.winfo_toplevel()
         self.excel_controller = ExcelImportController(root)
 
         self.students_data = []
         self.filtered_students = []
-        self.selected_students = []
+        self.selected_students = []  # IDs int
 
         self._using_excel_data = False
 
@@ -69,7 +71,7 @@ class StudentViewController:
             for s in self.students_data
             if s.get("annee") is not None
         }
-        return sorted(years, key=lambda x: int(x) if x.isdigit() else 999)
+        return sorted(years, key=lambda x: int(x) if str(x).isdigit() else 999)
 
     def get_available_classes(self):
         return sorted({
@@ -230,7 +232,6 @@ class StudentViewController:
             return sorted(students, key=lambda x: int(x.get("annee", 0)))
 
         if sort_type == "Date (Mois)":
-
             def next_event_date(student):
                 dates = []
                 for eid in self.event_manager.get_student_events(student["id"]):
@@ -261,11 +262,137 @@ class StudentViewController:
         return events_info
 
     def get_student_events_names_only(self, student):
-        return [
-            self.event_manager.get_event(eid)["nom"]
-            for eid in self.event_manager.get_student_events(student["id"])
-            if self.event_manager.get_event(eid)
-        ]
+        names = []
+        for eid in self.event_manager.get_student_events(student["id"]):
+            ev = self.event_manager.get_event(eid)
+            if ev and ev.get("nom"):
+                names.append(ev["nom"])
+        return names
+
+    # =========================================================
+    # HELPERS : nom -> id robuste
+    # =========================================================
+
+    def _resolve_event_id_by_name(self, event_name: str):
+        if not event_name:
+            return None
+
+        # ✅ robuste : si jamais id absent, on prend la clé dict
+        try:
+            events_dict = self.event_manager.events_data.get("events", {})
+            for key, ev in events_dict.items():
+                if ev.get("nom") == event_name:
+                    return ev.get("id") or key
+        except Exception:
+            pass
+
+        # fallback
+        for ev in self.event_manager.get_events():
+            if ev.get("nom") == event_name:
+                return ev.get("id")
+
+        return None
+
+    def _get_selected_event_id_from_filters(self):
+        filters = self.view.get_filters()
+        selected_event_name = filters.get("event", "Tous")
+
+        if not selected_event_name or selected_event_name == "Tous":
+            return None, "Choisis d'abord un événement précis (pas 'Tous')."
+
+        event_id = self._resolve_event_id_by_name(selected_event_name)
+        if not event_id:
+            return None, f"Événement introuvable (nom: {selected_event_name})"
+
+        if not self.event_manager.get_event(event_id):
+            return None, f"Événement introuvable (id: {event_id})"
+
+        return event_id, None
+
+    # =========================================================
+    # MÉTHODES APPELÉES PAR LA VUE
+    # =========================================================
+
+    def toggle_student_selection(self, student_id: int):
+        try:
+            sid = int(student_id)
+        except ValueError:
+            return
+
+        if sid in self.selected_students:
+            self.selected_students.remove(sid)
+        else:
+            self.selected_students.append(sid)
+
+        self._refresh_view()
+
+    def open_student_details(self, student_id: int):
+        try:
+            sid = int(student_id)
+        except ValueError:
+            return
+
+        student = next((s for s in self.students_data if int(s.get("id", -1)) == sid), None)
+        if not student:
+            messagebox.showwarning("Élève", "Élève introuvable.")
+            return
+
+        events = self.get_student_events(student)
+        txt = (
+            f"Nom : {student.get('nom','')}\n"
+            f"Prénom : {student.get('prenom','')}\n"
+            f"Classe : {student.get('classe','')}\n"
+            f"Année : {student.get('annee','')}\n\n"
+            f"Événements :\n- " + ("\n- ".join(events) if events else "Aucun")
+        )
+        messagebox.showinfo("Détails élève", txt)
+
+    def assign_to_event(self):
+        if not self.selected_students:
+            return False, "Sélectionne au moins un élève."
+
+        try:
+            popup = AssignEventPopup(
+                self.view.frame.winfo_toplevel(),
+                self.selected_students,
+                self.students_data,
+                self.event_manager
+            )
+        except TypeError as e:
+            return False, f"AssignEventPopup: signature invalide: {e}"
+        except Exception as e:
+            return False, f"Erreur ouverture popup: {e}"
+
+        if hasattr(popup, "show"):
+            try:
+                popup.show()
+            except Exception:
+                pass
+
+        self.apply_all_filters()
+        return True, None
+
+    def calculate_event_cost(self):
+        """
+        ✅ FIX FINAL :
+        CostCalculatorPopup(parent, event_id, selected_students)
+        """
+        if not self.selected_students:
+            return False, "Sélectionne au moins un élève."
+
+        event_id, error = self._get_selected_event_id_from_filters()
+        if error:
+            return False, error
+
+        parent = self.view.frame.winfo_toplevel()
+
+        try:
+            popup = CostCalculatorPopup(parent, event_id, self.selected_students)
+            popup.show()
+        except Exception as e:
+            return False, f"Erreur ouverture calculateur: {e}"
+
+        return True, None
 
     # =========================================================
     # HELPER

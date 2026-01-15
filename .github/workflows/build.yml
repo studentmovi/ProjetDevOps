@@ -52,11 +52,12 @@ jobs:
     - name: Build main.exe
       shell: pwsh
       run: |
-        pyinstaller --onefile --noconsole `
-          --add-data "app/assets;assets" `
-          --add-data "app/version.txt;." `
-          --add-data "app/changelog.json;." `
-          app/main.py
+        cd app
+        pyinstaller --onefile --noconsole --clean --noupx `
+          --add-data "assets;assets" `
+          --add-data "version.txt;." `
+          --add-data "changelog.json;." `
+          main.py
 
     # ====================================================
     #  BUILD LAUNCHER
@@ -64,11 +65,12 @@ jobs:
     - name: Build launcher.exe
       shell: pwsh
       run: |
-        pyinstaller --onefile --noconsole `
-          --add-data "app/assets;assets" `
-          --add-data "app/version.txt;." `
-          --add-data "app/changelog.json;." `
-          app/launcher.py
+        cd app
+        pyinstaller --onefile --noconsole --clean --noupx `
+          --add-data "assets;assets" `
+          --add-data "version.txt;." `
+          --add-data "changelog.json;." `
+          launcher.py
 
     # ====================================================
     #  RELEASE FOLDER
@@ -77,8 +79,8 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force release | Out-Null
-        Copy-Item dist\main.exe release\
-        Copy-Item dist\launcher.exe release\
+        Copy-Item app\dist\main.exe release\
+        Copy-Item app\dist\launcher.exe release\
         Copy-Item app\version.txt release\
         Copy-Item app\changelog.json release\
 

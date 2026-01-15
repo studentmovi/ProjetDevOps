@@ -1,6 +1,18 @@
 {
-  "latest": "0.8.0",
+  "latest": "0.8.1",
   "releases": [
+    {
+      "version": "0.8.1",
+      "changes": [
+        "Fixed incorrect cost calculation display in the event cost calculator",
+        "Resolved UI refresh issues after validating cost calculations",
+        "Fixed inconsistent total and per-student cost rendering",
+        "Corrected StudentView filtering edge cases causing empty or partial lists",
+        "Stabilized StudentView display after filter changes",
+        "Fixed minor StudentViewController logic regressions",
+        "General bug fixes and UI consistency improvements"
+      ]
+    },
     {
       "version": "0.8.0",
       "changes": [
