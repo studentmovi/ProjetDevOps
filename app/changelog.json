@@ -1,6 +1,11 @@
 {
-  "latest": "0.8.1",
+  "latest": "0.8.2",
   "releases": [
+    {"version": "0.8.2",
+      "changes": [
+        "fixed bugs on CI/CD pipeline for building and releasing the application"
+      ]
+    },
     {
       "version": "0.8.1",
       "changes": [
