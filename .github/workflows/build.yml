@@ -47,37 +47,24 @@ jobs:
         "version=$v" >> $env:GITHUB_OUTPUT
 
     # ====================================================
-    #  BUILD MAIN (ONEDIR)
+    #  BUILD MAIN (ONEDIR via SPEC)
     # ====================================================
     - name: Build main (onedir)
       shell: pwsh
       run: |
         cd app
-        pyinstaller --onedir --noconsole --clean --noupx `
-          --collect-submodules utils `
-          --collect-submodules views `
-          --collect-submodules controller `
-          --collect-submodules popups `
-          --add-data "assets;assets" `
-          --add-data "version.txt;." `
-          --add-data "changelog.json;." `
-          main.py
+        pyinstaller --clean --noconfirm --noupx main.spec
 
     # ====================================================
-    #  BUILD LAUNCHER (ONEDIR)
+    #  BUILD LAUNCHER (ONEDIR via SPEC)
     # ====================================================
     - name: Build launcher (onedir)
       shell: pwsh
       run: |
         cd app
-        pyinstaller --onedir --noconsole --clean --noupx `
-          --collect-submodules utils `
-          --collect-submodules views `
-          --add-data "assets;assets" `
-          --add-data "version.txt;." `
-          --add-data "changelog.json;." `
-          launcher.py
+        pyinstaller --clean --noconfirm --noupx launcher.spec
 
+        
     # ====================================================
     #  RELEASE FOLDER
     # ====================================================
