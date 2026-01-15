@@ -30,6 +30,8 @@ dist/
 
 # PyInstaller
 *.spec
+!app/*.spec
+
 
 # Tests / coverage (si tu en ajoutes plus tard)
 .coverage
