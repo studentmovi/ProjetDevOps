@@ -7,6 +7,18 @@ import threading
 import time
 import zipfile
 
+# ===============================
+# FORCE app/ COMME RACINE PYTHON
+# (AVANT imports utils/views)
+# ===============================
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(sys.executable)  # .../launcher/ en prod onedir
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # .../app/ en dev
+
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 try:
     import requests
 except Exception:
@@ -55,12 +67,9 @@ def root_dir() -> str:
     Donc root = parent de .../launcher/
     """
     base = app_dir()
-    # Si on est dans un dossier "launcher" en prod, le root est le parent
     parent = os.path.abspath(os.path.join(base, ".."))
-    # Heuristique: si parent contient "main" ou "version.txt", c'est bien le root
     if os.path.exists(os.path.join(parent, "main")) or os.path.exists(os.path.join(parent, "version.txt")):
         return parent
-    # En dev, app_dir() est déjà app/ donc root == app/
     return base
 
 
@@ -83,8 +92,6 @@ class LauncherController:
         # Root local (prod: dossier du zip, dev: app/)
         self.ROOT = root_dir()
 
-        # Fichiers communs à la racine du package (prod)
-        # En dev, tu peux laisser version.txt dans app/ (comme maintenant)
         self.VERSION_FILE = os.path.join(self.ROOT, "version.txt")
 
         # ✅ ONEDIR : main.exe est dans /main/main.exe
@@ -97,9 +104,6 @@ class LauncherController:
         self.GITHUB_RAW = f"https://raw.githubusercontent.com/{self.USER}/{self.REPO}/main/app"
 
         # ⚠️ En onedir, on ne met plus à jour via main.exe seul.
-        # On télécharge un ZIP (le zip release complet ou un zip "main-only").
-        # Ici on suppose que tu publies un zip "main-windows.zip" (recommandé).
-        # Si tu n'as que le zip global, mets plutôt l'URL du zip global.
         self.MAIN_ZIP_URL = f"https://github.com/{self.USER}/{self.REPO}/releases/latest/download/main-windows.zip"
 
     # --------------------------------------------------
@@ -150,16 +154,10 @@ class LauncherController:
     # 🔐 UPDATE SAFE (ONEDIR)
     # --------------------------------------------------
     def safe_update_main_dir(self):
-        """
-        En mode --onedir, on met à jour le dossier /main (pas seulement main.exe).
-        On télécharge un zip qui contient un dossier "main/" (ou directement le contenu du dossier main).
-        """
-        # Dossiers
         main_dir = os.path.join(self.ROOT, "main")
         tmp_dir = os.path.join(self.ROOT, "_update_tmp_main")
         tmp_zip = os.path.join(self.ROOT, "main_update.tmp.zip")
 
-        # Téléchargement ZIP
         r = requests.get(self.MAIN_ZIP_URL, stream=True)
         if r.status_code != 200:
             raise Exception("Téléchargement échoué (zip)")
@@ -167,39 +165,29 @@ class LauncherController:
         with open(tmp_zip, "wb") as f:
             shutil.copyfileobj(r.raw, f)
 
-        # Nettoyer temp
         if os.path.exists(tmp_dir):
             shutil.rmtree(tmp_dir, ignore_errors=True)
         os.makedirs(tmp_dir, exist_ok=True)
 
-        # Extraire
         with zipfile.ZipFile(tmp_zip, "r") as z:
             z.extractall(tmp_dir)
 
-        # Trouver le contenu "main"
-        # Cas 1: zip contient "main/..."
         extracted_main = os.path.join(tmp_dir, "main")
-        # Cas 2: zip contient directement les fichiers du main (main.exe, *.dll, ...)
         if not os.path.isdir(extracted_main):
             extracted_main = tmp_dir
 
-        # Vérifs minimales
         candidate_exe = os.path.join(extracted_main, "main.exe")
         if not os.path.exists(candidate_exe):
             raise Exception("Zip invalide: main.exe introuvable dans la mise à jour")
 
-        # Remplacement atomique (best effort sous Windows)
         bak_dir = main_dir + ".bak"
 
-        # Supprimer ancien backup
         if os.path.exists(bak_dir):
             shutil.rmtree(bak_dir, ignore_errors=True)
 
-        # Renommer main -> main.bak (si existe)
         if os.path.exists(main_dir):
             shutil.move(main_dir, bak_dir)
 
-        # Déployer nouveau main
         os.makedirs(main_dir, exist_ok=True)
         for item in os.listdir(extracted_main):
             src = os.path.join(extracted_main, item)
@@ -209,14 +197,12 @@ class LauncherController:
             else:
                 shutil.copy2(src, dst)
 
-        # Cleanup
         try:
             os.remove(tmp_zip)
         except Exception:
             pass
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-        # Supprimer backup si tout est ok
         shutil.rmtree(bak_dir, ignore_errors=True)
 
     # --------------------------------------------------
@@ -243,32 +229,26 @@ class LauncherController:
     # --------------------------------------------------
     def start_app_once(self):
         if self.app_started:
-            return  # 🔒 empêche double lancement
+            return
 
         self.app_started = True
         self.view.update_status("🚀 Lancement de l'application...")
 
         try:
             if self.DEV_MODE:
-                # Dev : lancer main.py
-                subprocess.Popen(
-                    [sys.executable, self.MAIN_PY_PATH],
-                    close_fds=True
-                )
+                subprocess.Popen([sys.executable, self.MAIN_PY_PATH], close_fds=True)
             else:
-                # Prod : lancer main/main.exe
                 if not os.path.exists(self.LOCAL_EXE_PATH):
                     raise FileNotFoundError(f"main.exe introuvable: {self.LOCAL_EXE_PATH}")
                 subprocess.Popen(
                     [self.LOCAL_EXE_PATH],
                     close_fds=True,
-                    cwd=os.path.dirname(self.LOCAL_EXE_PATH)  # important pour onedir (DLL à côté)
+                    cwd=os.path.dirname(self.LOCAL_EXE_PATH)
                 )
         except Exception as e:
             self.view.show_error(str(e))
             return
 
-        # fermer le launcher APRÈS avoir lancé le main
         self.view.root.after(120, self.view.close_loader)
 
     # --------------------------------------------------
