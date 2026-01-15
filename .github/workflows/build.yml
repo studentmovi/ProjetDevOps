@@ -47,26 +47,32 @@ jobs:
         "version=$v" >> $env:GITHUB_OUTPUT
 
     # ====================================================
-    #  BUILD MAIN
+    #  BUILD MAIN (ONEDIR)
     # ====================================================
-    - name: Build main.exe
+    - name: Build main (onedir)
       shell: pwsh
       run: |
         cd app
-        pyinstaller --onefile --noconsole --clean --noupx `
+        pyinstaller --onedir --noconsole --clean --noupx `
+          --collect-submodules utils `
+          --collect-submodules views `
+          --collect-submodules controller `
+          --collect-submodules popups `
           --add-data "assets;assets" `
           --add-data "version.txt;." `
           --add-data "changelog.json;." `
           main.py
 
     # ====================================================
-    #  BUILD LAUNCHER
+    #  BUILD LAUNCHER (ONEDIR)
     # ====================================================
-    - name: Build launcher.exe
+    - name: Build launcher (onedir)
       shell: pwsh
       run: |
         cd app
-        pyinstaller --onefile --noconsole --clean --noupx `
+        pyinstaller --onedir --noconsole --clean --noupx `
+          --collect-submodules utils `
+          --collect-submodules views `
           --add-data "assets;assets" `
           --add-data "version.txt;." `
           --add-data "changelog.json;." `
@@ -79,8 +85,11 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force release | Out-Null
-        Copy-Item app\dist\main.exe release\
-        Copy-Item app\dist\launcher.exe release\
+
+        # onedir => dist\main\main.exe et dist\launcher\launcher.exe
+        Copy-Item -Recurse -Force app\dist\main release\main
+        Copy-Item -Recurse -Force app\dist\launcher release\launcher
+
         Copy-Item app\version.txt release\
         Copy-Item app\changelog.json release\
 
